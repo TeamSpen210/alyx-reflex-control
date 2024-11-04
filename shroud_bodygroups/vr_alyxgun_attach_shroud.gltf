@@ -1,0 +1,555 @@
+{
+  "asset": {
+    "copyright": "",
+    "generator": "Source 2 Viewer 9.0.0.0 - https://valveresourceformat.github.io",
+    "version": "2.0"
+  },
+  "accessors": [
+    {
+      "bufferView": 0,
+      "componentType": 5126,
+      "count": 4850,
+      "max": [
+        7.905106544494629,
+        0.9173939824104309,
+        4.681793212890625
+      ],
+      "min": [
+        2.406219482421875,
+        -0.9159643054008484,
+        2.057370185852051
+      ],
+      "type": "VEC3"
+    },
+    {
+      "bufferView": 1,
+      "componentType": 5126,
+      "count": 4850,
+      "max": [
+        1,
+        1
+      ],
+      "min": [
+        0,
+        0
+      ],
+      "type": "VEC2"
+    },
+    {
+      "bufferView": 2,
+      "componentType": 5126,
+      "count": 4850,
+      "max": [
+        1,
+        1,
+        1
+      ],
+      "min": [
+        -1,
+        -1,
+        -1
+      ],
+      "type": "VEC3"
+    },
+    {
+      "bufferView": 3,
+      "componentType": 5126,
+      "count": 4850,
+      "max": [
+        1,
+        1,
+        1,
+        1
+      ],
+      "min": [
+        -1,
+        -1,
+        -1,
+        -1
+      ],
+      "type": "VEC4"
+    },
+    {
+      "bufferView": 4,
+      "componentType": 5123,
+      "count": 4850,
+      "type": "VEC4"
+    },
+    {
+      "bufferView": 5,
+      "componentType": 5126,
+      "count": 4850,
+      "max": [
+        1,
+        0,
+        0,
+        0
+      ],
+      "min": [
+        1,
+        0,
+        0,
+        0
+      ],
+      "type": "VEC4"
+    },
+    {
+      "bufferView": 6,
+      "componentType": 5125,
+      "count": 84,
+      "type": "SCALAR"
+    },
+    {
+      "bufferView": 7,
+      "componentType": 5125,
+      "count": 2928,
+      "type": "SCALAR"
+    },
+    {
+      "bufferView": 8,
+      "componentType": 5125,
+      "count": 2040,
+      "type": "SCALAR"
+    },
+    {
+      "bufferView": 9,
+      "componentType": 5125,
+      "count": 7416,
+      "type": "SCALAR"
+    },
+    {
+      "name": "Bind Matrices",
+      "bufferView": 10,
+      "componentType": 5126,
+      "count": 1,
+      "max": [
+        1.7881400538044545E-07,
+        -2.9802308176840597E-07,
+        1,
+        0,
+        1,
+        4.76837158203125E-07,
+        -1.7881377800677E-07,
+        0,
+        -4.768370445162873E-07,
+        1,
+        2.9802325229866256E-07,
+        0,
+        -0.0007144907722249627,
+        -3.765110969543457,
+        -2.8518199920654297,
+        1
+      ],
+      "min": [
+        1.7881400538044545E-07,
+        -2.9802308176840597E-07,
+        1,
+        0,
+        1,
+        4.76837158203125E-07,
+        -1.7881377800677E-07,
+        0,
+        -4.768370445162873E-07,
+        1,
+        2.9802325229866256E-07,
+        0,
+        -0.0007144907722249627,
+        -3.765110969543457,
+        -2.8518199920654297,
+        1
+      ],
+      "type": "MAT4"
+    }
+  ],
+  "bufferViews": [
+    {
+      "buffer": 0,
+      "byteLength": 58200,
+      "byteOffset": 155200,
+      "target": 34962
+    },
+    {
+      "buffer": 0,
+      "byteLength": 38800,
+      "byteOffset": 271600,
+      "target": 34962
+    },
+    {
+      "buffer": 0,
+      "byteLength": 58200,
+      "byteOffset": 213400,
+      "target": 34962
+    },
+    {
+      "buffer": 0,
+      "byteLength": 77600,
+      "target": 34962
+    },
+    {
+      "buffer": 0,
+      "byteLength": 38800,
+      "byteOffset": 310400,
+      "target": 34962
+    },
+    {
+      "buffer": 0,
+      "byteLength": 77600,
+      "byteOffset": 77600,
+      "target": 34962
+    },
+    {
+      "buffer": 0,
+      "byteLength": 336,
+      "byteOffset": 398736,
+      "target": 34963
+    },
+    {
+      "buffer": 0,
+      "byteLength": 11712,
+      "byteOffset": 378864,
+      "target": 34963
+    },
+    {
+      "buffer": 0,
+      "byteLength": 8160,
+      "byteOffset": 390576,
+      "target": 34963
+    },
+    {
+      "buffer": 0,
+      "byteLength": 29664,
+      "byteOffset": 349200,
+      "target": 34963
+    },
+    {
+      "buffer": 0,
+      "byteLength": 64,
+      "byteOffset": 399072
+    }
+  ],
+  "buffers": [
+    {
+      "byteLength": 399136,
+      "uri": "vr_alyxgun_attach_shroud.bin"
+    }
+  ],
+  "images": [
+    {
+      "name": "alyxgun_holo_sight_indicator_vmat_g_tcolor_142e2b9e.vtex",
+      "uri": "alyxgun_holo_sight_indicator_vmat_g_tcolor_142e2b9e.png"
+    },
+    {
+      "name": "default_normal_tga_7be61377.vtex",
+      "uri": "default_normal_tga_7be61377.png"
+    },
+    {
+      "name": "default_selfillum_tga_e58fcf1c.vtex",
+      "uri": "default_selfillum_tga_e58fcf1c.png"
+    },
+    {
+      "name": "alyxgun_holo_sight_vmat_g_tcolor_5a3f339e.vtex",
+      "uri": "alyxgun_holo_sight_vmat_g_tcolor_5a3f339e.png"
+    },
+    {
+      "name": "default_ao_tga_559f1ac6_orm_2875450975.png",
+      "uri": "default_ao_tga_559f1ac6_orm_2875450975.png"
+    },
+    {
+      "name": "default_ao_tga_559f1ac6.vtex",
+      "uri": "default_ao_tga_559f1ac6.png"
+    },
+    {
+      "name": "default_normal_tga_7be61377_orm_3851053911.png",
+      "uri": "default_normal_tga_7be61377_orm_3851053911.png"
+    },
+    {
+      "name": "alyxgun_base2_normal_tga_4e1c8a89.vtex",
+      "uri": "alyxgun_base2_normal_tga_4e1c8a89.png"
+    },
+    {
+      "name": "alyxgun_base2_color_tga_16da6573.vtex",
+      "uri": "alyxgun_base2_color_tga_16da6573.png"
+    },
+    {
+      "name": "alyxgun_base2_ao_tga_a3b3b8d5.vtex",
+      "uri": "alyxgun_base2_ao_tga_a3b3b8d5.png"
+    },
+    {
+      "name": "alyxgun_base2_color_tga_16da6573_orm_897274744.png",
+      "uri": "alyxgun_base2_color_tga_16da6573_orm_897274744.png"
+    }
+  ],
+  "materials": [
+    {
+      "name": "alyxgun_addons_sight_reticule_mat",
+      "doubleSided": true,
+      "pbrMetallicRoughness": {
+        "metallicFactor": 0
+      }
+    },
+    {
+      "extras": {
+        "baseColorTexture": {
+          "index": 3
+        }
+      },
+      "name": "alyxgun_holo_sight",
+      "alphaMode": "BLEND",
+      "emissiveTexture": {
+        "index": 6
+      },
+      "normalTexture": {
+        "index": 1
+      },
+      "occlusionTexture": {
+        "index": 5
+      },
+      "pbrMetallicRoughness": {
+        "baseColorTexture": {
+          "index": 3
+        },
+        "metallicRoughnessTexture": {
+          "index": 6
+        }
+      }
+    },
+    {
+      "extras": {
+        "baseColorTexture": {
+          "index": 0
+        }
+      },
+      "name": "alyxgun_holo_sight_indicator",
+      "alphaCutoff": 0.009999999776482582,
+      "alphaMode": "MASK",
+      "emissiveTexture": {
+        "index": 2
+      },
+      "normalTexture": {
+        "index": 1
+      },
+      "occlusionTexture": {
+        "index": 4
+      },
+      "pbrMetallicRoughness": {
+        "baseColorFactor": [
+          0.196078,
+          0.768628,
+          0.490196,
+          1
+        ],
+        "baseColorTexture": {
+          "index": 0
+        },
+        "metallicRoughnessTexture": {
+          "index": 4
+        }
+      }
+    },
+    {
+      "extras": {
+        "baseColorTexture": {
+          "index": 8
+        }
+      },
+      "name": "alyxgun_base",
+      "emissiveTexture": {
+        "index": 10
+      },
+      "normalTexture": {
+        "index": 7
+      },
+      "occlusionTexture": {
+        "index": 9
+      },
+      "pbrMetallicRoughness": {
+        "baseColorTexture": {
+          "index": 8
+        },
+        "metallicRoughnessTexture": {
+          "index": 10
+        }
+      }
+    }
+  ],
+  "meshes": [
+    {
+      "name": "vr_alyxgun_attach_shroud.vmdl_c.vr_alyxgun_attach_shroud",
+      "primitives": [
+        {
+          "attributes": {
+            "POSITION": 0,
+            "TEXCOORD_0": 1,
+            "NORMAL": 2,
+            "TANGENT": 3,
+            "JOINTS_0": 4,
+            "WEIGHTS_0": 5
+          },
+          "indices": 6,
+          "material": 0
+        },
+        {
+          "attributes": {
+            "POSITION": 0,
+            "TEXCOORD_0": 1,
+            "NORMAL": 2,
+            "TANGENT": 3,
+            "JOINTS_0": 4,
+            "WEIGHTS_0": 5
+          },
+          "indices": 7,
+          "material": 1
+        },
+        {
+          "attributes": {
+            "POSITION": 0,
+            "TEXCOORD_0": 1,
+            "NORMAL": 2,
+            "TANGENT": 3,
+            "JOINTS_0": 4,
+            "WEIGHTS_0": 5
+          },
+          "indices": 8,
+          "material": 2
+        },
+        {
+          "attributes": {
+            "POSITION": 0,
+            "TEXCOORD_0": 1,
+            "NORMAL": 2,
+            "TANGENT": 3,
+            "JOINTS_0": 4,
+            "WEIGHTS_0": 5
+          },
+          "indices": 9,
+          "material": 3
+        }
+      ]
+    }
+  ],
+  "nodes": [
+    {
+      "name": "vr_alyxgun_attach_shroud.vmdl_c",
+      "children": [
+        1
+      ],
+      "matrix": [
+        3.027916E-09,
+        0,
+        0.025399996,
+        0,
+        0.025399996,
+        3.027916E-09,
+        0,
+        0,
+        0,
+        0.025399996,
+        3.027916E-09,
+        0,
+        0,
+        0,
+        0,
+        1
+      ]
+    },
+    {
+      "name": "reticule_bone",
+      "rotation": [
+        0.49999985,
+        0.5,
+        0.4999999,
+        0.50000024
+      ],
+      "translation": [
+        2.8518188,
+        0.0007157762,
+        3.765112
+      ]
+    },
+    {
+      "name": "vr_alyxgun_attach_shroud.vmdl_c.vr_alyxgun_attach_shroud",
+      "mesh": 0,
+      "skin": 0
+    }
+  ],
+  "samplers": [
+    {
+      "magFilter": 9729,
+      "minFilter": 9987
+    }
+  ],
+  "scenes": [
+    {
+      "name": "vr_alyxgun_attach_shroud.vmdl_c",
+      "nodes": [
+        0,
+        2
+      ]
+    }
+  ],
+  "skins": [
+    {
+      "inverseBindMatrices": 10,
+      "joints": [
+        1
+      ]
+    }
+  ],
+  "textures": [
+    {
+      "name": "alyxgun_holo_sight_indicator_vmat_g_tcolor_142e2b9e.vtex",
+      "sampler": 0,
+      "source": 0
+    },
+    {
+      "name": "default_normal_tga_7be61377.vtex",
+      "sampler": 0,
+      "source": 1
+    },
+    {
+      "name": "default_selfillum_tga_e58fcf1c.vtex",
+      "sampler": 0,
+      "source": 2
+    },
+    {
+      "name": "alyxgun_holo_sight_vmat_g_tcolor_5a3f339e.vtex",
+      "sampler": 0,
+      "source": 3
+    },
+    {
+      "name": "default_ao_tga_559f1ac6_orm_2875450975.png",
+      "sampler": 0,
+      "source": 4
+    },
+    {
+      "name": "default_ao_tga_559f1ac6.vtex",
+      "sampler": 0,
+      "source": 5
+    },
+    {
+      "name": "default_normal_tga_7be61377_orm_3851053911.png",
+      "sampler": 0,
+      "source": 6
+    },
+    {
+      "name": "alyxgun_base2_normal_tga_4e1c8a89.vtex",
+      "sampler": 0,
+      "source": 7
+    },
+    {
+      "name": "alyxgun_base2_color_tga_16da6573.vtex",
+      "sampler": 0,
+      "source": 8
+    },
+    {
+      "name": "alyxgun_base2_ao_tga_a3b3b8d5.vtex",
+      "sampler": 0,
+      "source": 9
+    },
+    {
+      "name": "alyxgun_base2_color_tga_16da6573_orm_897274744.png",
+      "sampler": 0,
+      "source": 10
+    }
+  ]
+}
