@@ -5,15 +5,6 @@
 -- snd_pos = Offset from child model to play sound from.
 local weapons = {
 	{
-		classname = "hlvr_weapon_energygun",
-		-- Added this new bodygroup
-		model="attach_shroud",
-		group=1,
-		on_state=1,
-		off_state=0,
-		snd_pos=Vector(0, 2.6875, 2.825),
-	},
-	{
 		classname="hlvr_weapon_rapidfire",
 		-- This bodygroup already exists by default.
 		model="holosight",
@@ -23,6 +14,21 @@ local weapons = {
 		snd_pos=Vector(0, -1.0, 4.0),
 	}
 };
+if AddonIsEnabled("2482808860") then
+	print("Shooter Pistol mod enabled, cannot toggle.")
+	-- TODO: Include modified version, swap model?
+else
+	table.insert(weapons, {
+		classname = "hlvr_weapon_energygun",
+		-- Added this new bodygroup
+		model="attach_shroud",
+		group=1,
+		on_state=1,
+		off_state=0,
+		snd_pos=Vector(0, 2.6875, 2.825),
+	});
+end
+
 local CTX_ENABLED = "tspen_toggle_sight_enabled"
 -- These are defined in the regular weapons script, so they should already be loaded.
 -- But precache just in case.
@@ -49,7 +55,7 @@ local function UpdateSight(gun, info, should_toggle)
 				StartSoundEventFromPosition(vlua.select(enabled, SND_ON, SND_OFF), pos);
 			end
 			local state = vlua.select(enabled, info.on_state, info.off_state);
-			print("Set" .. info.classname .. " = " .. state);
+			print("Set sight for " .. info.classname .. " = " .. state);
 			child:SetBodygroup(info.group, state)
 		end
 		child = child:NextMovePeer()
