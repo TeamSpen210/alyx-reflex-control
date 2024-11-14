@@ -107,9 +107,11 @@ local function UpdateSight(gun, info, should_toggle)
 			if info.replace then
 				local mdl = child:GetModelName();
 				local desired = vlua.select(Player.IsLeftHanded, info.replace_lhand, info.replace_rhand)
-				if mdl ~= desired then
-					print(string.format("Togglsight: Override model \"%s\" -> \"%s\"", mdl, desired));
+				-- After a reload the model gets set to null, we need to always set the first time.
+				if mdl ~= desired or not info.replaced then
+					print(string.format("Togglesight: Override model \"%s\" -> \"%s\"", mdl, desired));
 					child:SetModel(desired);
+					info.replaced = true;
 				end
 			end
 			if info.disable_draw then
