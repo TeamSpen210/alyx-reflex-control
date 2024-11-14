@@ -18,18 +18,25 @@ end
 
 
 -- Definitions for each weapon. 
--- snd_pos = Offset from child model to play sound from.
--- snd_on, snd_off = Sounds to use.
--- replace_lhand, replace_rhand: If set, override the model to this.
--- group = the bodygroup index to change, if set.
---    on/off_state = states to use when turned on/off.
--- disable_draw = If set, hide when disabled.
+---@class WeaponInfo
+---@field name string Debug name for the weapon.
+---@field snd_pos Vector = Offset from child model to play sound from.
+---@field snd_on string Sound to use when turned on.
+---@field snd_off string
+---@field replace? string If set, override the model using this name.
+---@field group? integer The bodygroup index to change, if set.
+---@field on_state? integer States to use when turned on/off.
+---@field off_state? integer
+---@field disable_draw? boolean If set, hide when disabled.
+-- Later set:
+---@field replace_lhand string? Full model path for left hand.
+---@field replace_rhand string? Full model path for right hand.
+---@field replaced boolean? If the model has been replaced during this session.
 
--- Later set: replace_lhand, replace_rhand, replaced
+---@type table<string, WeaponInfo>
 local weapons = {
-	{
+	hlvr_weapon_rapidfire={
 		name="RapidFire",
-		classname="hlvr_weapon_rapidfire",
 		-- This bodygroup already exists by default.
 		model="holosight",
 		group=0,
@@ -47,20 +54,18 @@ if enabled_addons["2482808860"] then
 elseif enabled_addons["2406708838"] then
 	-- It's a scope on top, not something that can be disabled.
 	print("togglesight: DL-44 Blaster detected.")
-	table.insert(weapons, {
+	weapons.hlvr_weapon_energygun = {
 		name="DL-44",
-		classname="hlvr_weapon_energygun",
 		disable_draw=true,
 		snd_on=SND_ATTACH,
 		snd_off=SND_REMOVE,
 		snd_pos=Vector(0, 0, 0),
-	});
+	};
 else
 	print("togglesight: No known pistol mods detected.")
 	-- Original pistol.
-	table.insert(weapons, {
+	weapons.hlvr_weapon_energygun = {
 		name="Alyxgun",
-		classname="hlvr_weapon_energygun",
 		group=1,
 		on_state=1,
 		off_state=0,
@@ -68,7 +73,7 @@ else
 		snd_on=SND_HOLO_ON,
 		snd_off=SND_HOLO_OFF,
 		replace="alyxgun",
-	});
+	};
 end
 
 local CTX_ENABLED = "tspen_toggle_sight_enabled"
@@ -88,19 +93,25 @@ for _,info in pairs(weapons) do
 	end
 end
 
+local function identity(x) return x end
+local function toggle(x) return not x end
+
 -- Turn on Alyxlib's button tracking
 Input.AutoStart = true
 
 -- Find the sight entity, then update its state.
-local function UpdateSight(gun, info, should_toggle)
+---@param gun CBaseAnimating
+---@param info WeaponInfo
+---@param state_func fun(old: boolean): boolean
+local function UpdateSight(gun, info, state_func)
 	-- @type CBaseAnimating
-	local child = gun:FirstMoveChild()
+	local child = gun:FirstMoveChild() --[[@as CBaseAnimating]]
 	while child do
 		if child:GetClassname() == "reflex_sights" then
 			-- Found, toggle if required.
-			local enabled = Storage.LoadBoolean(gun, CTX_ENABLED, true)
-			if should_toggle then
-				enabled = not enabled
+			local prev_enabled = Storage.LoadBoolean(gun, CTX_ENABLED, true)
+			local enabled = state_func(prev_enabled)
+			if enabled ~= prev_enabled then
 				Storage.SaveBoolean(gun, CTX_ENABLED, enabled)
 				-- local pos = RotatePosition(child:GetAbsOrigin(), child:GetAngles(), info.snd_pos);
 				-- print("Snd pos: " .. tostring(pos - gun:GetOrigin()))
@@ -131,16 +142,16 @@ local function UpdateSight(gun, info, should_toggle)
 	end
 end
 
-local function UpdateSights(should_toggle)
-	local gun = Player:GetWeapon()
+-- Update the held weapon.
+---@param state_func fun(old: boolean): boolean
+local function UpdateHeldSight(state_func)
+	local gun = Player:GetWeapon() --[[@as CBaseAnimating]]
 	if gun == nil then
 		return
 	end
-	local cls = gun:GetClassname()
-	for _, info in pairs(weapons) do
-		if info.classname == cls then
-			UpdateSight(gun, info, should_toggle);
-		end
+	local info = weapons[gun:GetClassname()]
+	if info ~= nil then
+		UpdateSight(gun, info, state_func);
 	end
 end
 
@@ -148,14 +159,14 @@ local function Init()
 	Input:TrackButton(DIGITAL_INPUT_TOGGLE_LASER_SIGHT);
 	Input:ListenToButton(
 		"press", -1, DIGITAL_INPUT_TOGGLE_LASER_SIGHT, 1,
-		function() UpdateSights(true) end
+		function() UpdateHeldSight(toggle) end
 	);
 	-- Look for already-equipped weapons, toggle them in case we loaded from save.
 	local hand_pos = Player.PrimaryHand:GetAbsOrigin();
-	for _, info in pairs(weapons) do
-		local gun = Entities:FindByClassnameNearest(info.classname, hand_pos, 128);
+	for info_cls, info in pairs(weapons) do
+		local gun = Entities:FindByClassnameNearest(info_cls, hand_pos, 128) --[[@as CBaseAnimating?]]
 		if gun ~= nil then
-			UpdateSight(gun, info, false)
+			UpdateSight(gun, info, identity)
 		end
 	end
 	print("TS Toggle Reflex Sights active.")
@@ -163,5 +174,5 @@ end
 ListenToPlayerEvent("player_activate", Init);
 
 -- Whenever weapons are switched or the hand swaps, update in case they got out of sync.
-ListenToPlayerEvent("weapon_switch", function(data) UpdateSights(false) end)
-ListenToPlayerEvent("primary_hand_changed", function(data) UpdateSights(false) end)
+ListenToPlayerEvent("weapon_switch", function() UpdateHeldSight(identity) end)
+ListenToPlayerEvent("primary_hand_changed", function() UpdateHeldSight(identity) end)
