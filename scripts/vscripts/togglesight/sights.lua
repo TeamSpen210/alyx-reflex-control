@@ -24,6 +24,8 @@ end
 -- group = the bodygroup index to change, if set.
 --    on/off_state = states to use when turned on/off.
 -- disable_draw = If set, hide when disabled.
+
+-- Later set: replace_lhand, replace_rhand, replaced
 local weapons = {
 	{
 		name="RapidFire",
@@ -148,6 +150,14 @@ local function Init()
 		"press", -1, DIGITAL_INPUT_TOGGLE_LASER_SIGHT, 1,
 		function() UpdateSights(true) end
 	);
+	-- Look for already-equipped weapons, toggle them in case we loaded from save.
+	local hand_pos = Player.PrimaryHand:GetAbsOrigin();
+	for _, info in pairs(weapons) do
+		local gun = Entities:FindByClassnameNearest(info.classname, hand_pos, 128);
+		if gun ~= nil then
+			UpdateSight(gun, info, false)
+		end
+	end
 	print("TS Toggle Reflex Sights active.")
 end
 ListenToPlayerEvent("player_activate", Init);
