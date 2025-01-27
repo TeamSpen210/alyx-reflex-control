@@ -25,7 +25,7 @@ end
 ---@field snd_pos Vector = Offset from child model to play sound from.
 ---@field snd_on string Sound to use when turned on.
 ---@field snd_off string
----@field auto_range_sqr float Squared radius for auto-swapping.
+---@field auto_range_sqr number Squared radius for auto-swapping.
 ---@field replace? string If set, override the model using this name.
 ---@field group? integer The bodygroup index to change, if set.
 ---@field on_state? integer States to use when turned on/off.
@@ -180,8 +180,8 @@ local function IsEyeClose(old_state, info, sights)
 		return false
 	end
 
-	-- Distance between eyes.
-	local eye_dist = (Convars:GetFloat("r_stereo_eye_separation") or 1) / 2;
+	-- Distance between eyes, seems to be in cm. 6.285 is about the average IPD.
+	local eye_dist = (Convars:GetFloat("r_stereo_eye_separation") or 6.285) / 2.54;
 	-- Location of reflex sight back, and local vectors.
 	local reflex_pos = sights:GetAttachmentOrigin(info.cached_attach);
 	local sight_up = sights:GetUpVector();
@@ -207,10 +207,6 @@ local function IsEyeClose(old_state, info, sights)
 	return dist_left < range or dist_right < range;
 end
 
-local function OnButtonPressed()
-	UpdateHeldSight(toggle)
-end
-
 local EVT_BUTTON_CTX = "tspen_toggle_sight";
 
 local function AutoThink()
@@ -231,10 +227,14 @@ local function SetupCallbacks(auto)
 
 	if auto then
 		-- Auto mode.
-		Player:SetContextThink("tspen_toggle_sight_AutoThink", AutoThink, 0.0);
+		Player:SetContextThink("TSpen_ToggleSight_AutoThink", AutoThink, 0.0);
 	else
 		-- Button mode.
-		Input:ListenToButton("press", -1, DIGITAL_INPUT_TOGGLE_LASER_SIGHT, 1, OnButtonPressed, EVT_BUTTON_CTX);
+		Input:ListenToButton(
+			"press", -1, DIGITAL_INPUT_TOGGLE_LASER_SIGHT, 1,
+			function() UpdateHeldSight(toggle) end,
+			EVT_BUTTON_CTX
+		);
 	end
 end
 
