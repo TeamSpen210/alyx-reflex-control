@@ -1,13 +1,30 @@
 
--- These are defined in the regular weapons script, so they should already be loaded.
--- But precache just in case.
+-- We have 4 sounds - on/off, via button and auto.
+-- When automatic it's much quieter.
 
--- Turning on/off the hologram
-local SND_HOLO_ON = "RapidFire.UpgradeSelectionEnabled"
-local SND_HOLO_OFF = "RapidFire.UpgradeSelectionDisabled"
+---@class WeaponSounds
+---@field auto_off string
+---@field auto_on string
+---@field btn_off string
+---@field btn_on string
+
+-- Turning on/off the hologram. 
+---@type WeaponSounds
+local SND_HOLO = {
+	auto_off="TSpen.ToggleSight.HoloAutoOff",
+	auto_on="TSpen.ToggleSight.HoloAutoOn",
+	btn_off="TSpen.ToggleSight.HoloBtnOff",
+	btn_on="TSpen.ToggleSight.HoloBtnOn",
+};
+
 -- "Detaching" and re-attaching a physical prop.
-local SND_REMOVE = "Shotgun.SlidebackEmpty"
-local SND_ATTACH = "RapidFire.UpgradeSelectionChanged"
+---@type WeaponSounds
+local SND_PROP = {
+	auto_off="TSpen.ToggleSight.AttachAutoOff",
+	auto_on="TSpen.ToggleSight.AttachAutoOn",
+	btn_off="TSpen.ToggleSight.AttachBtnOff",
+	btn_on="TSpen.ToggleSight.AttachBtnOn",
+}
 
 -- On all reflex_sights entities, where the dot is. Direction is inconsistent.
 local ATTACH_REFLEX = "reticule_attach"
@@ -23,8 +40,7 @@ end
 ---@class WeaponInfo
 ---@field name string Debug name for the weapon.
 ---@field snd_pos Vector = Offset from child model to play sound from.
----@field snd_on string Sound to use when turned on.
----@field snd_off string
+---@field sounds WeaponSounds The sounds to use.
 ---@field auto_range_sqr number Squared radius for auto-swapping.
 ---@field replace? string If set, override the model using this name.
 ---@field group? integer The bodygroup index to change, if set.
@@ -47,8 +63,7 @@ local weapons = {
 		on_state=0,
 		off_state=1,
 		auto_range_sqr=4^2,
-		snd_on=SND_HOLO_ON,
-		snd_off=SND_HOLO_OFF,
+		sounds=SND_HOLO,
 		snd_pos=Vector(0, -1.0, 4.0),
 	}
 };
@@ -63,8 +78,7 @@ elseif enabled_addons["2406708838"] then
 		name="DL-44",
 		disable_draw=true,
 		auto_range_sqr=2^2,
-		snd_on=SND_ATTACH,
-		snd_off=SND_REMOVE,
+		sounds=SND_PROP,
 		snd_pos=Vector(0, 0, 0),
 	};
 else
@@ -77,8 +91,7 @@ else
 		off_state=0,
 		auto_range_sqr=2^2,
 		snd_pos=Vector(0, 2.6875, 2.825),
-		snd_on=SND_HOLO_ON,
-		snd_off=SND_HOLO_OFF,
+		sounds=SND_HOLO,
 		replace="alyxgun",
 	};
 end
@@ -87,10 +100,6 @@ local CTX_ENABLED = "tspen_toggle_sight_enabled"
 local REPLACE_PREFIX = "models/weapons/ts_togglesight/"
 local CVAR_AUTO = "tspen_reflex_control_auto"
 
-GlobalPrecache("sound", SND_HOLO_ON)
-GlobalPrecache("sound", SND_HOLO_OFF)
-GlobalPrecache("sound", SND_REMOVE)
-GlobalPrecache("sound", SND_ATTACH)
 
 for _,info in pairs(weapons) do
 	if info.replace then
@@ -98,6 +107,10 @@ for _,info in pairs(weapons) do
 		info.replace_rhand = REPLACE_PREFIX .. info.replace .. "_rhand.vmdl"
 		GlobalPrecache("model", info.replace_lhand);
 		GlobalPrecache("model", info.replace_rhand);
+		GlobalPrecache("sound", info.sounds.auto_off)
+		GlobalPrecache("sound", info.sounds.auto_on)
+		GlobalPrecache("sound", info.sounds.btn_off)
+		GlobalPrecache("sound", info.sounds.btn_on)
 	end
 end
 
@@ -125,7 +138,11 @@ local function UpdateSight(gun, info, state_func)
 				Storage.SaveBoolean(gun, CTX_ENABLED, enabled)
 				-- local pos = RotatePosition(child:GetAbsOrigin(), child:GetAngles(), info.snd_pos);
 				-- print("Snd pos: " .. tostring(pos - gun:GetOrigin()))
-				gun:EmitSound(vlua.select(enabled, info.snd_on, info.snd_off));
+				if EasyConvars:GetBool(CVAR_AUTO) then
+					gun:EmitSound(vlua.select(enabled, info.sounds.auto_on, info.sounds.auto_off));
+				else
+					gun:EmitSound(vlua.select(enabled, info.sounds.btn_on, info.sounds.btn_off));
+				end
 			end
 			if info.replace then
 				local mdl = child:GetModelName();
@@ -202,7 +219,7 @@ local function IsEyeClose(old_state, info, sights)
 	-- Add some hysteresis - if in range, need to pull further out to detach.
 	local range = info.auto_range_sqr;
 	if old_state then
-		range = range + 3^2;
+		range = range + 3*3;
 	end
 	return dist_left < range or dist_right < range;
 end
@@ -215,7 +232,7 @@ local function AutoThink()
 	end
 	-- Automatically toggle.
 	if not Player:HasWeaponEquipped() then
-		return 0.1; -- Wait for a weapon.
+		return 0.25; -- Wait for a weapon.
 	end
 	UpdateHeldSight(IsEyeClose);
 	return 0.05;

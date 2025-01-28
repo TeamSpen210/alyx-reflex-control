@@ -1,14 +1,111 @@
 <!-- kv3 encoding:text:version{e21c7f3c-8a33-41c5-9977-a76d3a32aa0d} format:generic:version{7412167c-06e9-4698-aff2-e63eb59037e7} -->
 {
-    MySound = 
+    TSpen.ToggleSight.HoloAutoOff = 
     {
         type = "hlvr_default_3d"
-        volume = 1.000000
-        volume_falloff_min = 0.000000
-        volume_falloff_max = 1000.000000
+        volume = 0.10000
+        use_hrtf = 1.000000
+        volume_falloff_min = 16.000000
+        volume_falloff_max = 32.000000
+        mixgroup = "PlayerWeapons"
         vsnd_files = 
         [
-            "sounds/common/null.vsnd",
+            "sounds/weapons/rapid_fire/wpn_rapid_fire_charge_disable_01.vsnd",
+        ]
+    }
+    TSpen.ToggleSight.HoloAutoOn = 
+    {
+        type = "hlvr_default_3d"
+        volume = 0.150000
+        use_hrtf = 1.000000
+        volume_falloff_min = 16.000000
+        volume_falloff_max = 32.000000
+        mixgroup = "PlayerWeapons"
+        vsnd_files = 
+        [
+            "sounds/weapons/rapid_fire/wpn_rapid_fire_charge_enable_01.vsnd",
+        ]
+    }
+    TSpen.ToggleSight.HoloBtnOff = 
+    {
+        type = "hlvr_default_3d"
+        volume = 0.8
+        use_hrtf = 1.000000
+        volume_falloff_min = 16.000000
+        volume_falloff_max = 256.000000
+        mixgroup = "PlayerWeapons"
+        vsnd_files = 
+        [
+            "sounds/weapons/rapid_fire/wpn_rapid_fire_charge_disable_01.vsnd",
+        ]
+    }
+    TSpen.ToggleSight.HoloBtnOn = 
+    {
+        type = "hlvr_default_3d"
+        volume = 0.8
+        use_hrtf = 1.000000
+        volume_falloff_min = 16.000000
+        volume_falloff_max = 256.000000
+        mixgroup = "PlayerWeapons"
+        vsnd_files = 
+        [
+            "sounds/weapons/rapid_fire/wpn_rapid_fire_charge_enable_01.vsnd",
+        ]
+    }
+
+
+    TSpen.ToggleSight.AttachAutoOff = 
+    {
+        type = "hlvr_default_3d"
+        volume = 0.50000
+        use_hrtf = 1.000000
+        volume_falloff_min = 16.000000
+        volume_falloff_max = 256.000000
+        mixgroup = "PlayerWeapons"
+        vsnd_files = 
+        [
+            "sounds/weapons/shotgun/wpn_shotgun_foley_lever_stuck_01.vsnd",
+        ]
+    }
+    TSpen.ToggleSight.AttachAutoOn = 
+    {
+        type = "hlvr_default_3d"
+        volume = 0.50000
+        use_hrtf = 1.000000
+        volume_falloff_min = 16.000000
+        volume_falloff_max = 256.000000
+        mixgroup = "PlayerWeapons"
+        vsnd_files = 
+        [
+            "sounds/weapons/energy_pistol/eblaster_screw_in_bullet_pod_01.vsnd",
+        ]
+    }
+    TSpen.ToggleSight.AttachBtnOff = 
+    {
+        type = "hlvr_default_3d"
+        volume = 0.8
+        use_hrtf = 1.000000
+        volume_falloff_min = 16.000000
+        volume_falloff_max = 256.000000
+        use_named_send = "weapons"
+        mixgroup = "PlayerWeapons"
+        vsnd_files = 
+        [
+            "sounds/weapons/shotgun/wpn_shotgun_foley_lever_stuck_01.vsnd",
+        ]
+    }
+    TSpen.ToggleSight.AttachBtnOn = 
+    {
+        type = "hlvr_default_3d"
+        volume = 0.8
+        use_hrtf = 1.000000
+        volume_falloff_min = 16.000000
+        volume_falloff_max = 256.000000
+        use_named_send = "weapons"
+        mixgroup = "PlayerWeapons"
+        vsnd_files = 
+        [
+            "sounds/weapons/energy_pistol/eblaster_screw_in_bullet_pod_01.vsnd",
         ]
     }
 }
