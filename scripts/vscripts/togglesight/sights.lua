@@ -111,8 +111,17 @@ local standard_pistol = {
 
 for addon in Convars:GetStr("default_enabled_addons_list"):gmatch("[^,]+") do
 	if addon == "2482808860" then
-		print("togglesight: Shooter Pistol mod enabled, cannot toggle.")
-		-- TODO: Include modified version, swap model?
+		print("togglesight: Shooter Pistol mod detected, toggling sights.")
+		weapons.hlvr_weapon_energygun = {
+			name="Shooter Pistol",
+			group=1,
+			on_state=1,
+			off_state=0,
+			auto_range_sqr=2^2,
+			snd_pos=Vector(0, 2.6875, 4.0),
+			sounds=SND_HOLO,
+			replace="shooterpistol",
+		};
 		return;
 	end
 
