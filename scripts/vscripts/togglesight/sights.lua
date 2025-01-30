@@ -29,12 +29,6 @@ local SND_PROP = {
 -- On all reflex_sights entities, where the dot is. Direction is inconsistent.
 local ATTACH_REFLEX = "reticule_attach"
 
-local enabled_addons = {};
-
-for addon in Convars:GetStr("default_enabled_addons_list"):gmatch("[^,]+") do
-	enabled_addons[addon] = true;
-end
-
 
 -- Definitions for each weapon. 
 ---@class WeaponInfo
@@ -55,6 +49,7 @@ end
 
 ---@type table<string, WeaponInfo>
 local weapons = {
+	-- Doesn't seem to be any SMG mods, we can unconditionally do this one.
 	hlvr_weapon_rapidfire={
 		name="RapidFire",
 		-- This bodygroup already exists by default.
@@ -68,33 +63,97 @@ local weapons = {
 	}
 };
 
-if enabled_addons["2482808860"] then
-	print("togglesight: Shooter Pistol mod enabled, cannot toggle.")
-	-- TODO: Include modified version, swap model?
-elseif enabled_addons["2406708838"] then
-	-- It's a scope on top, not something that can be disabled.
-	print("togglesight: DL-44 Blaster detected.")
-	weapons.hlvr_weapon_energygun = {
-		name="DL-44",
-		disable_draw=true,
-		auto_range_sqr=2^2,
-		sounds=SND_PROP,
-		snd_pos=Vector(0, 0, 0),
-	};
-else
-	print("togglesight: No known pistol mods detected.")
-	-- Original pistol.
-	weapons.hlvr_weapon_energygun = {
-		name="Alyxgun",
-		group=1,
-		on_state=1,
-		off_state=0,
-		auto_range_sqr=2^2,
-		snd_pos=Vector(0, 2.6875, 2.825),
-		sounds=SND_HOLO,
-		replace="alyxgun",
-	};
+-- Wrap so we can discard all this data once evaulated. Mods can't change
+-- within any given session.
+(function ()
+
+-- Pistols which have a physical sight with the view inside it.
+-- To toggle those would logically need to be added/removed.
+local phys_sight = {
+	["2971436118"] = "Desert Eagle",
+	["2804426219"] = "Apex Legends Pistol",
+	["2503412081"] = "OTS-14 Groza",
+	["2386620896"] = "Fallout 4 Pistol",
+	["2281728283"] = "COD 50 GS",
+	["2353427612"] = "Modern Warfare Renetti",
+	["2406708838"] = "DL-44 Blaster",
+};
+
+-- Pistols that don't have their own attachments, just use the default sight model.
+local default_sight = {
+	["2778816428"] = "Gunman Pistol",
+	["2595135995"] = "Cyberpunk liberty",
+	["2290585929"] = "CSGO Five-SeveN",
+	["2282845209"] = "Goldeneye PP7",
+	["2263486326"] = "Boneworks M1911",
+	["2258990046"] = "Silenced Pistol",
+	["2248623741"] = "AJM-9",
+}
+
+-- Sight is composed only of the holo part, so we can disable-draw to hide.
+local invis_sight = {
+	["2352925224"] = "Deus Ex HR Zenith",
+	["2291028898"] = "Doom EMG Pistol",
+}
+
+-- Config for standard Alyxgun.
+--- @type WeaponInfo
+local standard_pistol = {
+	name="Alyxgun",
+	group=1,
+	on_state=1,
+	off_state=0,
+	auto_range_sqr=2^2,
+	snd_pos=Vector(0, 2.6875, 2.825),
+	sounds=SND_HOLO,
+	replace="alyxgun",
+};
+
+for addon in Convars:GetStr("default_enabled_addons_list"):gmatch("[^,]+") do
+	if addon == "2482808860" then
+		print("togglesight: Shooter Pistol mod enabled, cannot toggle.")
+		-- TODO: Include modified version, swap model?
+		return;
+	end
+
+	if default_sight[addon] ~= nil then
+		-- Just uses the regular one, copy the config.
+		print("togglesight: " .. default_sight[addon] .. " detected, uses standard sights.")
+		standard_pistol.name = default_sight[addon];
+		weapons.hlvr_weapon_energygun = standard_pistol;
+		return;
+	end
+
+	if phys_sight[addon] ~= nil then
+		-- It's not disableable, it'll be "removed" when not used.
+		print("togglesight: " .. phys_sight[addon] .. " detected, hiding/showing physical sight.")
+		weapons.hlvr_weapon_energygun = {
+			name=phys_sight[addon],
+			disable_draw=true,
+			auto_range_sqr=2^2,
+			sounds=SND_PROP,
+			snd_pos=Vector(0, 0, 0),
+		};
+		return;
+	end
+
+	if invis_sight[addon] ~= nil then
+		print("togglesight: " .. invis_sight[addon] .. " detected, hiding/showing holo sight.")
+		weapons.hlvr_weapon_energygun = {
+			name=phys_sight[addon],
+			disable_draw=true,
+			auto_range_sqr=2^2,
+			sounds=SND_HOLO,
+			snd_pos=Vector(0, 0, 0),
+		};
+		return;
+	end
 end
+print("togglesight: No known pistol mods detected.")
+weapons.hlvr_weapon_energygun = standard_pistol;
+
+end)()
+
 
 local CTX_ENABLED = "tspen_toggle_sight_enabled"
 local REPLACE_PREFIX = "models/weapons/ts_togglesight/"
