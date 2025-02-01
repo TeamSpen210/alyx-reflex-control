@@ -1,0 +1,134 @@
+<!-- kv3 encoding:text:version{e21c7f3c-8a33-41c5-9977-a76d3a32aa0d} format:modeldoc28:version{fb63b6ca-f435-4aa0-a2c7-c66ddc651dca} -->
+{
+	rootNode = 
+	{
+		_class = "RootNode"
+		children = 
+		[
+			{
+				_class = "BodyGroupList"
+				children = 
+				[
+					{
+						_class = "BodyGroup"
+						name = "mount"
+						children = 
+						[
+							{
+								_class = "BodyGroupChoice"
+								meshes = 
+								[
+									"mount",
+								]
+							},
+						]
+						hidden_in_tools = false
+					},
+					{
+						_class = "BodyGroup"
+						name = "sight"
+						children = 
+						[
+							{
+								_class = "BodyGroupChoice"
+								meshes = [  ]
+							},
+							{
+								_class = "BodyGroupChoice"
+								meshes = 
+								[
+									"sight",
+								]
+							},
+						]
+						hidden_in_tools = false
+					},
+				]
+			},
+			{
+				_class = "MaterialGroupList"
+				children = 
+				[
+					{
+						_class = "DefaultMaterialGroup"
+						remaps = 
+						[
+							{
+								from = "materials/weapons/luger_p08/nydar_m47/alyxgun_base.vmat"
+								to = "models/weapons/vr_alyxgun/alyxgun_base.vmat"
+							},
+							{
+								from = "materials/weapons/luger_p08/nydar_m47/nydar_m47.vmat"
+								to = "materials/weapons/luger_p08/nydar_m47/nydar_m47.vmat"
+							},
+							{
+								from = "materials/weapons/luger_p08/nydar_m47/mtk.vmat"
+								to = "materials/weapons/luger_p08/nydar_m47/mtk.vmat"
+							},
+							{
+								from = "materials/weapons/luger_p08/nydar_m47/nydar_m47_glass.vmat"
+								to = "materials/weapons/luger_p08/nydar_m47/nydar_m47_glass.vmat"
+							},
+							{
+								from = "materials/weapons/luger_p08/nydar_m47/nydar_holo_sight.vmat"
+								to = "materials/weapons/luger_p08/nydar_m47/nydar_holo_sight.vmat"
+							},
+							{
+								from = "materials/weapons/luger_p08/nydar_m47/nydar_holo_sight_indicator.vmat"
+								to = "materials/weapons/luger_p08/nydar_m47/nydar_holo_sight_indicator.vmat"
+							},
+						]
+						use_global_default = false
+						global_default_material = ""
+					},
+				]
+			},
+			{
+				_class = "AttachmentList"
+				children = 
+				[
+					{
+						_class = "Attachment"
+						name = "reticule_attach"
+						parent_bone = ""
+						relative_origin = [ 4.5, 0.0, 4.75 ]
+						relative_angles = [ 0.0, 180.0, 0.0 ]
+						weight = 1.0
+						ignore_rotation = false
+					},
+				]
+			},
+			{
+				_class = "RenderMeshList"
+				children = 
+				[
+					{
+						_class = "RenderMeshFile"
+						name = "mount"
+						filename = "models/luger_mount.dmx"
+						import_scale = 1.0
+						import_filter = 
+						{
+							exclude_by_default = false
+							exception_list = [  ]
+						}
+					},
+					{
+						_class = "RenderMeshFile"
+						name = "sight"
+						filename = "models/luger_sights.dmx"
+						import_scale = 1.0
+						import_filter = 
+						{
+							exclude_by_default = false
+							exception_list = [  ]
+						}
+					},
+				]
+			},
+		]
+		model_archetype = ""
+		primary_associated_entity = ""
+		anim_graph_name = ""
+	}
+}

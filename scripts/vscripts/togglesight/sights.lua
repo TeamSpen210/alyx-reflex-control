@@ -19,7 +19,7 @@ local SND_HOLO = {
 
 -- "Detaching" and re-attaching a physical prop.
 ---@type WeaponSounds
-local SND_PROP = {
+local SND_ATTACH = {
 	auto_off="TSpen.ToggleSight.AttachAutoOff",
 	auto_on="TSpen.ToggleSight.AttachAutoOn",
 	btn_off="TSpen.ToggleSight.AttachBtnOff",
@@ -29,6 +29,9 @@ local SND_PROP = {
 -- On all reflex_sights entities, where the dot is. Direction is inconsistent.
 local ATTACH_REFLEX = "reticule_attach"
 
+local CTX_ENABLED = "tspen_toggle_sight_enabled"
+local REPLACE_PREFIX = "models/weapons/ts_togglesight/"
+local CVAR_AUTO = "tspen_reflex_control_auto"
 
 -- Definitions for each weapon. 
 ---@class WeaponInfo
@@ -125,6 +128,23 @@ for addon in Convars:GetStr("default_enabled_addons_list"):gmatch("[^,]+") do
 		return;
 	end
 
+	if addon == "2122819116" then
+		print("togglesight: Luger P08 mod detected, toggling sights.")
+		weapons.hlvr_weapon_energygun = {
+			name="Luger P08",
+			group=1,
+			on_state=1,
+			off_state=0,
+			auto_range_sqr=2^2,
+			snd_pos=Vector(4.7, 0, 4.0),
+			sounds=SND_ATTACH,
+			-- Both are identical.
+			replace_lhand=REPLACE_PREFIX .. "luger_ambi.vmdl",
+			replace_rhand=REPLACE_PREFIX .. "luger_ambi.vmdl",
+		};
+		return;
+	end
+
 	if default_sight[addon] ~= nil then
 		-- Just uses the regular one, copy the config.
 		print("togglesight: " .. default_sight[addon] .. " detected, uses standard sights.")
@@ -140,7 +160,7 @@ for addon in Convars:GetStr("default_enabled_addons_list"):gmatch("[^,]+") do
 			name=phys_sight[addon],
 			disable_draw=true,
 			auto_range_sqr=2^2,
-			sounds=SND_PROP,
+			sounds=SND_ATTACH,
 			snd_pos=Vector(0, 0, 0),
 		};
 		return;
@@ -164,15 +184,14 @@ weapons.hlvr_weapon_energygun = standard_pistol;
 end)()
 
 
-local CTX_ENABLED = "tspen_toggle_sight_enabled"
-local REPLACE_PREFIX = "models/weapons/ts_togglesight/"
-local CVAR_AUTO = "tspen_reflex_control_auto"
-
-
 for _,info in pairs(weapons) do
-	if info.replace then
-		info.replace_lhand = REPLACE_PREFIX .. info.replace .. "_lhand.vmdl"
-		info.replace_rhand = REPLACE_PREFIX .. info.replace .. "_rhand.vmdl"
+	if info.replace or info.replace_lhand or info.replace_rhand then
+		if not info.replace_lhand then
+			info.replace_lhand = REPLACE_PREFIX .. info.replace .. "_lhand.vmdl"
+		end
+		if not info.replace_rhand then
+			info.replace_rhand = REPLACE_PREFIX .. info.replace .. "_rhand.vmdl"
+		end
 		GlobalPrecache("model", info.replace_lhand);
 		GlobalPrecache("model", info.replace_rhand);
 		GlobalPrecache("sound", info.sounds.auto_off)
@@ -212,13 +231,16 @@ local function UpdateSight(gun, info, state_func)
 					gun:EmitSound(vlua.select(enabled, info.sounds.btn_on, info.sounds.btn_off));
 				end
 			end
-			if info.replace then
+			local replace = vlua.select(Player.IsLeftHanded, info.replace_lhand, info.replace_rhand);
+			if replace then
 				local mdl = child:GetModelName();
-				local desired = vlua.select(Player.IsLeftHanded, info.replace_lhand, info.replace_rhand)
 				-- After a reload the model gets set to null, we need to always set the first time.
-				if mdl ~= desired or not info.replaced then
-					--print(string.format("Togglesight: Override model \"%s\" -> \"%s\"", mdl, desired));
-					child:SetModel(desired);
+				if mdl ~= replace or not info.replaced then
+					print(string.format("Togglesight: Override model \"%s\" -> \"%s\"", mdl, replace));
+					-- Save/restore the skin, for the Shooter Pistol. Harmless otherwise.
+					local prev_skin = child:GetMaterialGroupHash();
+					child:SetModel(replace);
+					child:SetMaterialGroupHash(prev_skin);
 					info.replaced = true;
 					info.cached_attach = nil; -- Invalidated.
 				end
