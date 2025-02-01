@@ -39,14 +39,14 @@ local CVAR_AUTO = "tspen_reflex_control_auto"
 ---@field snd_pos Vector = Offset from child model to play sound from.
 ---@field sounds WeaponSounds The sounds to use.
 ---@field auto_range_sqr number Squared radius for auto-swapping.
----@field replace? string If set, override the model using this name.
+---@field replace? string If set, auto-define replace_lhand/rhand.
+---@field replace_lhand? string If set, full model path to replace for this hand.
+---@field replace_rhand? string If set, full model path to replace for this hand.
 ---@field group? integer The bodygroup index to change, if set.
 ---@field on_state? integer States to use when turned on/off.
 ---@field off_state? integer
 ---@field disable_draw? boolean If set, hide when disabled.
 -- Later set:
----@field replace_lhand string? Full model path for left hand.
----@field replace_rhand string? Full model path for right hand.
 ---@field replaced boolean? If the model has been replaced during this session.
 ---@field cached_attach integer? Cached reflex attachment index.
 
@@ -185,6 +185,8 @@ end)()
 
 
 for _,info in pairs(weapons) do
+	-- Allow specifying replace lhand/rhand standalone, for ambidexterous etc
+	-- sights.
 	if info.replace or info.replace_lhand or info.replace_rhand then
 		if not info.replace_lhand then
 			info.replace_lhand = REPLACE_PREFIX .. info.replace .. "_lhand.vmdl"
@@ -282,7 +284,7 @@ local function IsEyeClose(old_state, info, sights)
 	if info.cached_attach == nil then
 		info.cached_attach = sights:ScriptLookupAttachment(ATTACH_REFLEX);
 	end
-	-- Simple check, if looking at the front always disable.
+	-- Simple check, if looking backwards at the gun, always disable.
 	if sights:GetForwardVector():Dot(Player.HMDAvatar:GetForwardVector()) < 0 then
 		return false
 	end
