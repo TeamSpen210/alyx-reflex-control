@@ -1,3 +1,6 @@
+require "alyxlib.helpers.easyconvars"
+require "alyxlib.controls.input"
+
 
 -- We have 4 sounds - on/off, via button and auto.
 -- When automatic it's much quieter.
@@ -26,12 +29,24 @@ local SND_ATTACH = {
 	btn_on="TSpen.ToggleSight.AttachBtnOn",
 }
 
--- On all reflex_sights entities, where the dot is. Direction is inconsistent.
+-- Flipping down a part while turning on/off the hologram.
+---@type WeaponSounds
+local SND_FLIP = {
+	auto_off="TSpen.ToggleSight.FlipAutoOff",
+	auto_on="TSpen.ToggleSight.FlipAutoOn",
+	btn_off="TSpen.ToggleSight.FlipBtnOff",
+	btn_on="TSpen.ToggleSight.FlipBtnOn",
+}
+
+-- On default and most modded reflex_sights entities, where the screen is. 
+-- Direction is inconsistent, many modded sights omit. All our replacements have
+-- it though.
 local ATTACH_REFLEX = "reticule_attach"
 
 local CTX_ENABLED = "tspen_toggle_sight_enabled"
 local REPLACE_PREFIX = "models/weapons/ts_togglesight/"
 local CVAR_AUTO = "tspen_reflex_control_auto"
+local DEBUG = false;
 
 -- Definitions for each weapon. 
 ---@class WeaponInfo
@@ -46,9 +61,12 @@ local CVAR_AUTO = "tspen_reflex_control_auto"
 ---@field on_state? integer States to use when turned on/off.
 ---@field off_state? integer
 ---@field disable_draw? boolean If set, hide when disabled.
+---@field sight_pos_lhand? Vector The offset to the reflex sights, for auto mode. 
+---       If unset, use the `reticule_attach` attachment point to locate.
+---@field sight_pos_rhand? Vector The offset to the reflex sights, for auto mode. 
+---       If unset, use the `reticule_attach` attachment point to locate.
 -- Later set:
 ---@field replaced boolean? If the model has been replaced during this session.
----@field cached_attach integer? Cached reflex attachment index.
 
 ---@type table<string, WeaponInfo>
 local weapons = {
@@ -66,23 +84,47 @@ local weapons = {
 	}
 };
 
+-- Name + sight offsets, when inheriting.
+---@class SightInfo
+---@field name string Debug name for the weapon.
+---@field pos_lhand? Vector
+---@field pos_rhand? Vector
+
 -- Wrap so we can discard all this data once evaulated. Mods can't change
 -- within any given session.
 (function ()
 
 -- Pistols which have a physical sight with the view inside it.
 -- To toggle those would logically need to be added/removed.
+---@type table<string, SightInfo>
 local phys_sight = {
-	["2971436118"] = "Desert Eagle",
-	["2804426219"] = "Apex Legends Pistol",
-	["2503412081"] = "OTS-14 Groza",
-	["2386620896"] = "Fallout 4 Pistol",
-	["2281728283"] = "COD 50 GS",
-	["2353427612"] = "Modern Warfare Renetti",
-	["2406708838"] = "DL-44 Blaster",
+	["2971436118"] = {name="Desert Eagle"},
+	["2804426219"] = {name="Apex Legends Pistol"},
+	["2503412081"] = {
+		name="OTS-14 Groza",
+		pos_lhand=Vector(0.4, 0, 8.35),
+		pos_rhand=Vector(0.4, 0, 8.35),
+	},
+	["2386620896"] = {
+		name="Fallout 4 Pistol",
+		pos_lhand=Vector(-0.7, -0.03, 4.35),
+		pos_rhand=Vector(-0.7, 0.03, 4.35),
+	},
+	["2281728283"] = {
+		name="COD 50 GS",
+		pos_lhand=Vector(5.8, 0, 3.8),
+		pos_rhand=Vector(5.8, 0, 3.8),
+	},
+	["2353427612"] = {name="Modern Warfare Renetti"},
+	["2406708838"] = {
+		name="DL-44 Blaster",
+		pos_lhand=Vector(-5.4, 14.5, 2.3),
+		pos_rhand=Vector(-5.4, -14.5, 2.3),
+	},
 };
 
 -- Pistols that don't have their own attachments, just use the default sight model.
+-- No custom sight offsets necessary, the default model has the attachment.
 local default_sight = {
 	["2778816428"] = "Gunman Pistol",
 	["2595135995"] = "Cyberpunk liberty",
@@ -91,12 +133,19 @@ local default_sight = {
 	["2263486326"] = "Boneworks M1911",
 	["2258990046"] = "Silenced Pistol",
 	["2248623741"] = "AJM-9",
+	["2243234414"] = "MMod Pistol",
 }
 
 -- Sight is composed only of the holo part, so we can disable-draw to hide.
+---@type table<string, SightInfo>
 local invis_sight = {
-	["2352925224"] = "Deus Ex HR Zenith",
-	["2291028898"] = "Doom EMG Pistol",
+	["2352925224"] = {
+		name="Deus Ex HR Zenith",
+		pos_lhand=Vector(5, 0, 4),
+		pos_rhand=Vector(5, 0, 4),
+	},
+	["2291028898"] = {name="Doom EMG Pistol"},
+	["2251436253"] = {name="TF2 Pistol"}, -- Uses default model.
 }
 
 -- Config for standard Alyxgun.
@@ -155,7 +204,7 @@ for addon in Convars:GetStr("default_enabled_addons_list"):gmatch("[^,]+") do
 			off_state=0,
 			auto_range_sqr=2^2,
 			snd_pos=Vector(4.8, 0, 4.0),
-			sounds=SND_ATTACH,
+			sounds=SND_FLIP,
 			replace="mcmessenger"
 		};
 		return;
@@ -169,7 +218,7 @@ for addon in Convars:GetStr("default_enabled_addons_list"):gmatch("[^,]+") do
 			off_state=0,
 			auto_range_sqr=2^2,
 			snd_pos=Vector(4.8, 0, 4.0),
-			sounds=SND_ATTACH,
+			sounds=SND_FLIP,
 			replace="mcmessenger"
 		};
 		return;
@@ -183,26 +232,32 @@ for addon in Convars:GetStr("default_enabled_addons_list"):gmatch("[^,]+") do
 		return;
 	end
 
-	if phys_sight[addon] ~= nil then
+	local sight = phys_sight[addon]
+	if sight ~= nil then
 		-- It's not disableable, it'll be "removed" when not used.
-		print("togglesight: " .. phys_sight[addon] .. " detected, hiding/showing physical sight.")
+		print("togglesight: " .. sight.name .. " detected, hiding/showing physical sight.")
 		weapons.hlvr_weapon_energygun = {
-			name=phys_sight[addon],
+			name=sight.name,
 			disable_draw=true,
 			auto_range_sqr=2^2,
 			sounds=SND_ATTACH,
+			sight_pos_lhand=sight.pos_lhand,
+			sight_pos_rhand=sight.pos_rhand,
 			snd_pos=Vector(0, 0, 0),
 		};
 		return;
 	end
 
-	if invis_sight[addon] ~= nil then
-		print("togglesight: " .. invis_sight[addon] .. " detected, hiding/showing holo sight.")
+	sight = invis_sight[addon]
+	if sight ~= nil then
+		print("togglesight: " .. sight.name .. " detected, hiding/showing holo sight.")
 		weapons.hlvr_weapon_energygun = {
-			name=phys_sight[addon],
+			name=sight.name,
 			disable_draw=true,
 			auto_range_sqr=2^2,
 			sounds=SND_HOLO,
+			sight_pos_lhand=sight.pos_lhand,
+			sight_pos_rhand=sight.pos_rhand,
 			snd_pos=Vector(0, 0, 0),
 		};
 		return;
@@ -274,7 +329,6 @@ local function UpdateSight(gun, info, state_func)
 					child:SetModel(replace);
 					child:SetMaterialGroupHash(prev_skin);
 					info.replaced = true;
-					info.cached_attach = nil; -- Invalidated.
 				end
 			end
 			if info.disable_draw then
@@ -311,20 +365,43 @@ end
 ---@param sights CBaseAnimating
 ---@returns boolean
 local function IsEyeClose(old_state, info, sights)
-	if info.cached_attach == nil then
-		info.cached_attach = sights:ScriptLookupAttachment(ATTACH_REFLEX);
+
+
+	-- Location of the reflex sight screen, in world.
+	local reflex_pos;
+	local reflex_off = vlua.select(Player.IsLeftHanded, info.sight_pos_lhand, info.sight_pos_rhand);
+	if reflex_off == nil then
+		-- Try and grab from the attachment point.
+		local attach_ind = sights:ScriptLookupAttachment(ATTACH_REFLEX);
+		reflex_pos = sights:GetAttachmentOrigin(attach_ind);
+		reflex_off = sights:TransformPointWorldToEntity(reflex_pos);
+		if reflex_off:LengthSquared() < 0.1 then
+			-- It's right at the origin, probably not valid.
+			print("togglesight: ERROR, no sight position for gun " .. info.name .. "!");
+			-- Roughly where most sights are.
+			reflex_off = Vector(4, 0, 4);
+			reflex_pos = sights:TransformPointEntityToWorld(reflex_off);
+		end
+		if Player.IsLeftHanded then
+			info.sight_pos_lhand = reflex_off;
+		else
+			info.sight_pos_rhand = reflex_off;
+		end
+		print("Offset for gun " .. info.name .. " = " .. reflex_off);
+	else
+		reflex_pos = sights:TransformPointEntityToWorld(reflex_off);
 	end
 	-- Simple check, if looking backwards at the gun, always disable.
 	if sights:GetForwardVector():Dot(Player.HMDAvatar:GetForwardVector()) < 0 then
 		return false
 	end
 
+	if DEBUG then
+		DebugDrawSphere(reflex_pos, Vector(255, 0, 255), 32, 0.1, false, 0.1);
+	end
+
 	-- Distance between eyes, seems to be in cm. 6.285 is about the average IPD.
 	local eye_dist = (Convars:GetFloat("r_stereo_eye_separation") or 6.285) / 2.54;
-	-- Location of reflex sight back, and local vectors.
-	local reflex_pos = sights:GetAttachmentOrigin(info.cached_attach);
-	local sight_up = sights:GetUpVector();
-	local sight_right = sights:GetRightVector();
 
 	-- Offset from player eye center to reflex
 	local eye_off = Player:EyePosition() - reflex_pos;
@@ -334,13 +411,17 @@ local function IsEyeClose(old_state, info, sights)
 	local eye_left = eye_off + (player_right * -eye_dist);
 	local eye_right = eye_off + (player_right * eye_dist);
 
+	-- Local axes.
+	local sight_up = sights:GetUpVector();
+	local sight_right = sights:GetRightVector();
 	-- Finally, calc 2D distance in sight plane = check if eye is within cylinder
 	-- extending out of the sights.
 	local dist_left = eye_left:Dot(sight_up)^2 + eye_left:Dot(sight_right)^2;
 	local dist_right = eye_right:Dot(sight_up)^2 + eye_right:Dot(sight_right)^2;
-	-- Add some hysteresis - if in range, need to pull further out to detach.
+
 	local range = info.auto_range_sqr;
 	if old_state then
+		-- Add some hysteresis - if in range, need to pull further out to detach.
 		range = range + 3*3;
 	end
 	return dist_left < range or dist_right < range;
