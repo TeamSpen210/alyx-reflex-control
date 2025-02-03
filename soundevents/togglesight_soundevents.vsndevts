@@ -1,5 +1,9 @@
 <!-- kv3 encoding:text:version{e21c7f3c-8a33-41c5-9977-a76d3a32aa0d} format:generic:version{7412167c-06e9-4698-aff2-e63eb59037e7} -->
 {
+    // All the toggle sounds. Auto variants are much quieter since they
+    // happen often while you move your hand around.
+
+    // Turn on/off the holographic sight.
     TSpen.ToggleSight.HoloAutoOff = 
     {
         type = "hlvr_default_3d"
@@ -53,7 +57,7 @@
         ]
     }
 
-
+    // Attach/detach a physical sight etc.
     TSpen.ToggleSight.AttachAutoOff = 
     {
         type = "hlvr_default_3d"
@@ -107,5 +111,74 @@
         [
             "sounds/weapons/energy_pistol/eblaster_screw_in_bullet_pod_01.vsnd",
         ]
+    }
+
+    // Move mechanism + turn on/off.
+    TSpen.ToggleSight.FlipAutoMove = 
+    {
+        type = "hlvr_default_3d"
+        volume = 0.50000
+        use_hrtf = 1.000000
+        volume_falloff_min = 16.000000
+        volume_falloff_max = 256.000000
+        mixgroup = "PlayerWeapons"
+        vsnd_files = 
+        [
+            "sounds/weapons/smg1/switch_single.vsnd",
+        ]
+    }
+    TSpen.ToggleSight.FlipBtnMove = 
+    {
+        type = "hlvr_default_3d"
+        volume = 0.8
+        use_hrtf = 1
+        volume_falloff_min = 16
+        volume_falloff_max = 256
+        mixgroup = "PlayerWeapons"
+        vsnd_files = 
+        [
+            "sounds/weapons/smg1/switch_single.vsnd",
+        ]
+    }
+
+    TSpen.ToggleSight.FlipAutoOff = 
+    {
+        type = "hlvr_start_multi"
+        soundevent_01 = "TSpen.ToggleSight.HoloAutoOff"
+        soundevent_02 = "TSpen.ToggleSight.FlipAutoMove"
+        use_01 = 1
+        use_02 = 1
+        use_03 = 0
+        use_04 = 0
+    }
+    TSpen.ToggleSight.FlipAutoOn = 
+    {
+        type = "hlvr_start_multi"
+        soundevent_01 = "TSpen.ToggleSight.HoloAutoOn"
+        soundevent_02 = "TSpen.ToggleSight.FlipAutoMove"
+        use_01 = 1
+        use_02 = 1
+        use_03 = 0
+        use_04 = 0
+    }
+    TSpen.ToggleSight.FlipBtnOff = 
+    {
+        type = "hlvr_start_multi"
+        soundevent_01 = "TSpen.ToggleSight.HoloBtnOff"
+        soundevent_02 = "TSpen.ToggleSight.FlipBtnMove"
+        use_01 = 1
+        use_02 = 1
+        use_03 = 0
+        use_04 = 0
+    }
+    TSpen.ToggleSight.FlipBtnOn = 
+    {
+        type = "hlvr_start_multi"
+        soundevent_01 = "TSpen.ToggleSight.HoloBtnOff"
+        soundevent_02 = "TSpen.ToggleSight.FlipBtnMove"
+        use_01 = 1
+        use_02 = 1
+        use_03 = 0
+        use_04 = 0
     }
 }
