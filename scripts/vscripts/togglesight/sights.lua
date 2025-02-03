@@ -145,6 +145,36 @@ for addon in Convars:GetStr("default_enabled_addons_list"):gmatch("[^,]+") do
 		return;
 	end
 
+	-- These two are both made by MCMessenger, and share a sight.
+	if addon == "2126368719" then
+		print("togglesight: Halo M6C mod detected, toggling sights.")
+		weapons.hlvr_weapon_energygun = {
+			name="Halo M6C",
+			group=1,
+			on_state=1,
+			off_state=0,
+			auto_range_sqr=2^2,
+			snd_pos=Vector(4.8, 0, 4.0),
+			sounds=SND_ATTACH,
+			replace="mcmessenger"
+		};
+		return;
+	end
+	if addon == "2168778468" then
+		print("togglesight: Walther PPK mod detected, toggling sights.")
+		weapons.hlvr_weapon_energygun = {
+			name="Walther PPK",
+			group=1,
+			on_state=1,
+			off_state=0,
+			auto_range_sqr=2^2,
+			snd_pos=Vector(4.8, 0, 4.0),
+			sounds=SND_ATTACH,
+			replace="mcmessenger"
+		};
+		return;
+	end
+
 	if default_sight[addon] ~= nil then
 		-- Just uses the regular one, copy the config.
 		print("togglesight: " .. default_sight[addon] .. " detected, uses standard sights.")
