@@ -53,7 +53,7 @@ local DEBUG = false;
 ---@field name string Debug name for the weapon.
 ---@field snd_pos Vector = Offset from child model to play sound from.
 ---@field sounds WeaponSounds The sounds to use.
----@field auto_range_sqr number Squared radius for auto-swapping.
+---@field auto_range number Radius for auto-swapping.
 ---@field replace? string If set, auto-define replace_lhand/rhand.
 ---@field replace_lhand? string If set, full model path to replace for this hand.
 ---@field replace_rhand? string If set, full model path to replace for this hand.
@@ -66,6 +66,7 @@ local DEBUG = false;
 ---@field sight_pos_rhand? Vector The offset to the reflex sights, for auto mode. 
 ---       If unset, use the `reticule_attach` attachment point to locate.
 -- Later set:
+---@field auto_range_sqr? number Pre-squared radius.
 ---@field replaced boolean? If the model has been replaced during this session.
 
 ---@type table<string, WeaponInfo>
@@ -78,7 +79,7 @@ local weapons = {
 		group=0,
 		on_state=0,
 		off_state=1,
-		auto_range_sqr=4^2,
+		auto_range=2.5,
 		sounds=SND_HOLO,
 		snd_pos=Vector(0, -1.0, 4.0),
 	}
@@ -155,7 +156,7 @@ local standard_pistol = {
 	group=1,
 	on_state=1,
 	off_state=0,
-	auto_range_sqr=2^2,
+	auto_range=2,
 	snd_pos=Vector(0, 2.6875, 2.825),
 	sounds=SND_HOLO,
 	replace="alyxgun",
@@ -169,7 +170,7 @@ for addon in Convars:GetStr("default_enabled_addons_list"):gmatch("[^,]+") do
 			group=1,
 			on_state=1,
 			off_state=0,
-			auto_range_sqr=2^2,
+			auto_range=2,
 			snd_pos=Vector(0, 2.6875, 4.0),
 			sounds=SND_HOLO,
 			replace="shooterpistol",
@@ -184,7 +185,7 @@ for addon in Convars:GetStr("default_enabled_addons_list"):gmatch("[^,]+") do
 			group=1,
 			on_state=1,
 			off_state=0,
-			auto_range_sqr=2^2,
+			auto_range=2,
 			snd_pos=Vector(4.7, 0, 4.0),
 			sounds=SND_ATTACH,
 			-- Both are identical.
@@ -202,7 +203,7 @@ for addon in Convars:GetStr("default_enabled_addons_list"):gmatch("[^,]+") do
 			group=1,
 			on_state=1,
 			off_state=0,
-			auto_range_sqr=2^2,
+			auto_range=2,
 			snd_pos=Vector(4.8, 0, 4.0),
 			sounds=SND_FLIP,
 			replace="mcmessenger"
@@ -216,7 +217,7 @@ for addon in Convars:GetStr("default_enabled_addons_list"):gmatch("[^,]+") do
 			group=1,
 			on_state=1,
 			off_state=0,
-			auto_range_sqr=2^2,
+			auto_range=2,
 			snd_pos=Vector(4.8, 0, 4.0),
 			sounds=SND_FLIP,
 			replace="mcmessenger"
@@ -239,7 +240,7 @@ for addon in Convars:GetStr("default_enabled_addons_list"):gmatch("[^,]+") do
 		weapons.hlvr_weapon_energygun = {
 			name=sight.name,
 			disable_draw=true,
-			auto_range_sqr=2^2,
+			auto_range=2,
 			sounds=SND_ATTACH,
 			sight_pos_lhand=sight.pos_lhand,
 			sight_pos_rhand=sight.pos_rhand,
@@ -254,7 +255,7 @@ for addon in Convars:GetStr("default_enabled_addons_list"):gmatch("[^,]+") do
 		weapons.hlvr_weapon_energygun = {
 			name=sight.name,
 			disable_draw=true,
-			auto_range_sqr=2^2,
+			auto_range=2,
 			sounds=SND_HOLO,
 			sight_pos_lhand=sight.pos_lhand,
 			sight_pos_rhand=sight.pos_rhand,
@@ -272,6 +273,7 @@ end)()
 for _,info in pairs(weapons) do
 	-- Allow specifying replace lhand/rhand standalone, for ambidexterous etc
 	-- sights.
+	info.auto_range_sqr = info.auto_range * info.auto_range;
 	if info.replace or info.replace_lhand or info.replace_rhand then
 		if not info.replace_lhand then
 			info.replace_lhand = REPLACE_PREFIX .. info.replace .. "_lhand.vmdl"
@@ -387,17 +389,13 @@ local function IsEyeClose(old_state, info, sights)
 		else
 			info.sight_pos_rhand = reflex_off;
 		end
-		print("Offset for gun " .. info.name .. " = " .. reflex_off);
+		print("Offset for gun " .. info.name .. " = " .. tostring(reflex_off));
 	else
 		reflex_pos = sights:TransformPointEntityToWorld(reflex_off);
 	end
 	-- Simple check, if looking backwards at the gun, always disable.
 	if sights:GetForwardVector():Dot(Player.HMDAvatar:GetForwardVector()) < 0 then
 		return false
-	end
-
-	if DEBUG then
-		DebugDrawSphere(reflex_pos, Vector(255, 0, 255), 32, 0.1, false, 0.1);
 	end
 
 	-- Distance between eyes, seems to be in cm. 6.285 is about the average IPD.
@@ -419,11 +417,23 @@ local function IsEyeClose(old_state, info, sights)
 	local dist_left = eye_left:Dot(sight_up)^2 + eye_left:Dot(sight_right)^2;
 	local dist_right = eye_right:Dot(sight_up)^2 + eye_right:Dot(sight_right)^2;
 
-	local range = info.auto_range_sqr;
+	-- Increase by the eye distance, to get a cone.
+	local range = info.auto_range;
 	if old_state then
 		-- Add some hysteresis - if in range, need to pull further out to detach.
-		range = range + 3*3;
+		range = range + 2;
 	end
+
+	if DEBUG then
+		local sight_back = reflex_pos + sights:GetForwardVector() * -32.0;
+		DebugDrawSphere(reflex_pos, Vector(255, 0, 255), 32, range, false, 0.1);
+		-- Aligned edges to show the cylinder.
+		DebugDrawLine(reflex_pos + sight_up * range, sight_back + sight_up * range, 255, 255, 0, false, 0.1);
+		DebugDrawLine(reflex_pos - sight_up * range, sight_back - sight_up * range, 255, 255, 0, false, 0.1);
+		DebugDrawLine(reflex_pos + sight_right * range, sight_back + sight_right * range, 255, 255, 0, false, 0.1);
+		DebugDrawLine(reflex_pos - sight_right * range, sight_back - sight_right * range, 255, 255, 0, false, 0.1);
+	end
+	range = range * range;
 	return dist_left < range or dist_right < range;
 end
 
