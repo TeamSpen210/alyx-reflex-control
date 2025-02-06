@@ -1,5 +1,10 @@
 require "alyxlib.helpers.easyconvars"
 require "alyxlib.controls.input"
+require "alyxlib.globals"
+
+local version = "v1.0.0"
+
+local ADDON_ID = RegisterAlyxLibAddon("Reflex Control", version, nil, "ts_togglesight", "v1.3.0")
 
 
 -- We have 4 sounds - on/off, via button and auto.
@@ -43,7 +48,9 @@ local SND_FLIP = {
 -- it though.
 local ATTACH_REFLEX = "reticule_attach"
 
-local CTX_ENABLED = "tspen_toggle_sight_enabled"
+local CTX_ENABLED = "tspen_toggle_sight_enabled" -- Think function context
+local EVT_BUTTON_CTX = "tspen_toggle_sight" -- Context for Alyxlib buttons
+--- Folder replacement models are found in.
 local REPLACE_PREFIX = "models/weapons/ts_togglesight/"
 local CVAR_AUTO = "tspen_reflex_control_auto"
 local DEBUG = false;
@@ -290,13 +297,33 @@ for _,info in pairs(weapons) do
 	end
 end
 
+ReigsterAlyxLibDiagnostic(ADDON_ID, function ()
+	Msg("Mode: " .. vlua.select(EasyConvars:GetBool(CVAR_AUTO) or false, "Auto", "Manual"));
+	for cls, weapon in pairs(weapons) do
+		Msg(("Registered weapon for %s = %s:"):format(cls, weapon.name))
+		if weapon.replace_lhand or weapon.replace_rhand then
+			Msg("- Left-hand model: " .. (weapon.replace_lhand or "N/A"))
+			Msg("- Right-hand model: " .. (weapon.replace_rhand or "N/A"))
+			if not weapon.replaced then
+				Msg("- Not yet overridden.")
+			end
+		end
+		if weapon.disable_draw then
+			Msg("- Sets alpha to zero to hide.")
+		end
+		Msg(("- Auto range: %i"):format(weapon.auto_range))
+		if weapon.group then
+			Msg(("- Bodygroups: group %i, on=%q, off=%q"):format(weapon.group, weapon.on_state, weapon.off_state))
+		end
+	end
+
+    return true, "Operational"
+end)
+
 ---@param x boolean
 local function identity(x) return x end
 ---@param x boolean
 local function toggle(x) return not x end
-
--- Turn on Alyxlib's button tracking
-Input.AutoStart = true
 
 -- Find the sight entity, then update its state.
 ---@param gun CBaseAnimating
@@ -323,7 +350,7 @@ local function UpdateSight(gun, info, state_func)
 			local replace = vlua.select(Player.IsLeftHanded, info.replace_lhand, info.replace_rhand);
 			if replace then
 				local mdl = child:GetModelName();
-				-- After a reload the model gets set to null, we need to always set the first time.
+				-- After a reload the model ends up null/invisible, we need to always set the first time.
 				if mdl ~= replace or not info.replaced then
 					print(string.format("Togglesight: Override model \"%s\" -> \"%s\"", mdl, replace));
 					-- Save/restore the skin, for the Shooter Pistol. Harmless otherwise.
@@ -367,8 +394,6 @@ end
 ---@param sights CBaseAnimating
 ---@returns boolean
 local function IsEyeClose(old_state, info, sights)
-
-
 	-- Location of the reflex sight screen, in world.
 	local reflex_pos;
 	local reflex_off = vlua.select(Player.IsLeftHanded, info.sight_pos_lhand, info.sight_pos_rhand);
@@ -437,8 +462,6 @@ local function IsEyeClose(old_state, info, sights)
 	return dist_left < range or dist_right < range;
 end
 
-local EVT_BUTTON_CTX = "tspen_toggle_sight";
-
 local function AutoThink()
 	if not EasyConvars:GetBool(CVAR_AUTO) then
 		return; -- Non-auto, stop thinking.
@@ -479,7 +502,6 @@ EasyConvars:RegisterToggle(
 EasyConvars:SetPersistent(CVAR_AUTO, true);
 
 local function Init()
-	Input:TrackButton(DIGITAL_INPUT_TOGGLE_LASER_SIGHT);
 	SetupCallbacks(EasyConvars:GetBool(CVAR_AUTO));
 	-- Look for already-equipped weapons, toggle them in case we loaded from save.
 	local hand_pos = Player.PrimaryHand:GetAbsOrigin();
