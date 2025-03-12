@@ -297,27 +297,37 @@ for _,info in pairs(weapons) do
 	end
 end
 
-ReigsterAlyxLibDiagnostic(ADDON_ID, function ()
-	Msg("Mode: " .. vlua.select(EasyConvars:GetBool(CVAR_AUTO) or false, "Auto", "Manual"));
+--- Calculate the distance between the eyes.
+local function EyeDist()
+	-- Distance between eyes, seems to be in cm. 6.285 is about the average IPD.
+	return (Convars:GetFloat("r_stereo_eye_separation") or 6.285) / 2.54;
+end
+
+RegisterAlyxLibDiagnostic(ADDON_ID, function ()
+	local diag = {"Running"};
+	table.insert(diag, "Mode: " .. vlua.select(EasyConvars:GetBool(CVAR_AUTO) or false, "Auto", "Manual"));
+	table.insert(diag, ("Eye Distance (Hammer Units): %f"):format(EyeDist()))
 	for cls, weapon in pairs(weapons) do
-		Msg(("Registered weapon for %s = %s:"):format(cls, weapon.name))
+		table.insert(diag, ("Registered weapon for %s = %s:"):format(cls, weapon.name))
 		if weapon.replace_lhand or weapon.replace_rhand then
-			Msg("- Left-hand model: " .. (weapon.replace_lhand or "N/A"))
-			Msg("- Right-hand model: " .. (weapon.replace_rhand or "N/A"))
+			table.insert(diag, "- Left-hand model: %s" .. (weapon.replace_lhand or "N/A"))
+			table.insert(diag, "- Right-hand model: %s" .. (weapon.replace_rhand or "N/A"))
 			if not weapon.replaced then
-				Msg("- Not yet overridden.")
+				table.insert(diag, "- Not yet overridden.")
 			end
 		end
+		table.insert(diag, ("- Left-hand sights offset: %q"):format(weapon.sight_pos_lhand or "Not calculated"))
+		table.insert(diag, ("- Right-hand sights offset: %q"):format(weapon.sight_pos_rhand or "Not calculated"))
 		if weapon.disable_draw then
-			Msg("- Sets alpha to zero to hide.")
+			table.insert(diag, "- Disables draw to hide.")
 		end
-		Msg(("- Auto range: %i"):format(weapon.auto_range))
+		table.insert(diag, ("- Auto range: %i"):format(weapon.auto_range))
 		if weapon.group then
-			Msg(("- Bodygroups: group %i, on=%q, off=%q"):format(weapon.group, weapon.on_state, weapon.off_state))
+			table.insert(diag, ("- Bodygroups: group %i, on=%q, off=%q"):format(weapon.group, weapon.on_state, weapon.off_state))
 		end
 	end
 
-    return true, "Operational"
+    return true, table.concat(diag, "\n")
 end)
 
 ---@param x boolean
@@ -424,7 +434,7 @@ local function IsEyeClose(old_state, info, sights)
 	end
 
 	-- Distance between eyes, seems to be in cm. 6.285 is about the average IPD.
-	local eye_dist = (Convars:GetFloat("r_stereo_eye_separation") or 6.285) / 2.54;
+	local eye_dist = EyeDist();
 
 	-- Offset from player eye center to reflex
 	local eye_off = Player:EyePosition() - reflex_pos;
