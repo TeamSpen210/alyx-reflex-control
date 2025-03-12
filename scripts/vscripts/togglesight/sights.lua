@@ -1,10 +1,12 @@
 require "alyxlib.helpers.easyconvars"
 require "alyxlib.controls.input"
+require "alyxlib.extensions.entity"
+require "alyxlib.extensions.entities"
 require "alyxlib.globals"
 
 local version = "v1.0.0"
 
-local ADDON_ID = RegisterAlyxLibAddon("Reflex Control", version, nil, "ts_togglesight", "v1.3.0")
+local ADDON_ID = RegisterAlyxLibAddon("Reflex Control", version, "???", "ts_togglesight", "v1.3.0")
 
 
 -- We have 4 sounds - on/off, via button and auto.
@@ -371,9 +373,8 @@ local function UpdateSight(gun, info, state_func)
 				end
 			end
 			if info.disable_draw then
-				local alpha = vlua.select(enabled, 255, 0)
 				--print(string.format("Set sight for %s, alpha=%i", info.name, alpha))
-				child:SetRenderAlpha(alpha);
+				child:SetRenderingEnabled(enabled);
 			end
 			if info.group ~= nil then
 				local state = vlua.select(enabled, info.on_state, info.off_state);
