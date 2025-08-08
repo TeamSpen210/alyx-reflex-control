@@ -6,7 +6,10 @@ require "alyxlib.globals"
 
 local version = "v1.0.0"
 
-local ADDON_ID = RegisterAlyxLibAddon("Reflex Control", version, "???", "ts_togglesight", "v1.3.0")
+local ADDON_ID = RegisterAlyxLibAddon("Reflex Control", version, "???", "ts_togglesight", "v2.0.0")
+local MENU_ID = "ts_togglesight"
+local CLS_PISTOL = "hlvr_weapon_energygun"
+local CLS_SMG = "hlvr_weapon_rapidfire"
 
 
 -- We have 4 sounds - on/off, via button and auto.
@@ -55,7 +58,21 @@ local EVT_BUTTON_CTX = "tspen_toggle_sight" -- Context for Alyxlib buttons
 --- Folder replacement models are found in.
 local REPLACE_PREFIX = "models/weapons/ts_togglesight/"
 local CVAR_AUTO = "tspen_reflex_control_auto"
+local CVAR_AUTO_RANGE = {
+	[CLS_PISTOL]="tspen_reflex_control_pistol_auto_range",
+	[CLS_SMG]="tspen_reflex_control_smg_auto_range",
+}
+local CVAR_DISABLE = {
+	[CLS_PISTOL]="tspen_reflex_control_disable_pistol",
+	[CLS_SMG]="tspen_reflex_control_disable_smg",
+}
+local CTRL_PISTOL_AUTO_RANGE = "ts_togglesight_pistol_auto_range";
+local CTRL_SMG_AUTO_RANGE = "ts_togglesight_smg_auto_range";
 local DEBUG = false;
+local ORIG_MODELS = {
+	[CLS_PISTOL]="models/weapons/vr_alyxgun/vr_alyxgun_attach_shroud",
+	[CLS_SMG]="models/weapons/vr_ipistol/ipistol_holosight",
+}
 
 -- Definitions for each weapon. 
 ---@class WeaponInfo
@@ -75,13 +92,13 @@ local DEBUG = false;
 ---@field sight_pos_rhand? Vector The offset to the reflex sights, for auto mode. 
 ---       If unset, use the `reticule_attach` attachment point to locate.
 -- Later set:
----@field auto_range_sqr? number Pre-squared radius.
 ---@field replaced boolean? If the model has been replaced during this session.
+---@field cls? string Classname for weapon.
 
 ---@type table<string, WeaponInfo>
 local weapons = {
 	-- Doesn't seem to be any SMG mods, we can unconditionally do this one.
-	hlvr_weapon_rapidfire={
+	[CLS_SMG]={
 		name="RapidFire",
 		-- This bodygroup already exists by default.
 		model="holosight",
@@ -161,7 +178,7 @@ local invis_sight = {
 -- Config for standard Alyxgun.
 --- @type WeaponInfo
 local standard_pistol = {
-	name="Alyxgun",
+	name="Alyx Gun",
 	group=1,
 	on_state=1,
 	off_state=0,
@@ -174,7 +191,7 @@ local standard_pistol = {
 for addon in Convars:GetStr("default_enabled_addons_list"):gmatch("[^,]+") do
 	if addon == "2482808860" then
 		print("togglesight: Shooter Pistol mod detected, toggling sights.")
-		weapons.hlvr_weapon_energygun = {
+		weapons[CLS_PISTOL] = {
 			name="Shooter Pistol",
 			group=1,
 			on_state=1,
@@ -189,7 +206,7 @@ for addon in Convars:GetStr("default_enabled_addons_list"):gmatch("[^,]+") do
 
 	if addon == "2122819116" then
 		print("togglesight: Luger P08 mod detected, toggling sights.")
-		weapons.hlvr_weapon_energygun = {
+		weapons[CLS_PISTOL] = {
 			name="Luger P08",
 			group=1,
 			on_state=1,
@@ -207,7 +224,7 @@ for addon in Convars:GetStr("default_enabled_addons_list"):gmatch("[^,]+") do
 	-- These two are both made by MCMessenger, and share a sight.
 	if addon == "2126368719" then
 		print("togglesight: Halo M6C mod detected, toggling sights.")
-		weapons.hlvr_weapon_energygun = {
+		weapons[CLS_PISTOL] = {
 			name="Halo M6C",
 			group=1,
 			on_state=1,
@@ -221,7 +238,7 @@ for addon in Convars:GetStr("default_enabled_addons_list"):gmatch("[^,]+") do
 	end
 	if addon == "2168778468" then
 		print("togglesight: Walther PPK mod detected, toggling sights.")
-		weapons.hlvr_weapon_energygun = {
+		weapons[CLS_PISTOL] = {
 			name="Walther PPK",
 			group=1,
 			on_state=1,
@@ -238,7 +255,7 @@ for addon in Convars:GetStr("default_enabled_addons_list"):gmatch("[^,]+") do
 		-- Just uses the regular one, copy the config.
 		print("togglesight: " .. default_sight[addon] .. " detected, uses standard sights.")
 		standard_pistol.name = default_sight[addon];
-		weapons.hlvr_weapon_energygun = standard_pistol;
+		weapons[CLS_PISTOL] = standard_pistol;
 		return;
 	end
 
@@ -246,7 +263,7 @@ for addon in Convars:GetStr("default_enabled_addons_list"):gmatch("[^,]+") do
 	if sight ~= nil then
 		-- It's not disableable, it'll be "removed" when not used.
 		print("togglesight: " .. sight.name .. " detected, hiding/showing physical sight.")
-		weapons.hlvr_weapon_energygun = {
+		weapons[CLS_PISTOL] = {
 			name=sight.name,
 			disable_draw=true,
 			auto_range=2,
@@ -261,7 +278,7 @@ for addon in Convars:GetStr("default_enabled_addons_list"):gmatch("[^,]+") do
 	sight = invis_sight[addon]
 	if sight ~= nil then
 		print("togglesight: " .. sight.name .. " detected, hiding/showing holo sight.")
-		weapons.hlvr_weapon_energygun = {
+		weapons[CLS_PISTOL] = {
 			name=sight.name,
 			disable_draw=true,
 			auto_range=2,
@@ -274,15 +291,15 @@ for addon in Convars:GetStr("default_enabled_addons_list"):gmatch("[^,]+") do
 	end
 end
 print("togglesight: No known pistol mods detected.")
-weapons.hlvr_weapon_energygun = standard_pistol;
+weapons[CLS_PISTOL] = standard_pistol;
 
 end)()
 
 
-for _,info in pairs(weapons) do
+for cls, info in pairs(weapons) do
 	-- Allow specifying replace lhand/rhand standalone, for ambidexterous etc
 	-- sights.
-	info.auto_range_sqr = info.auto_range * info.auto_range;
+	info.cls = cls;
 	if info.replace or info.replace_lhand or info.replace_rhand then
 		if not info.replace_lhand then
 			info.replace_lhand = REPLACE_PREFIX .. info.replace .. "_lhand.vmdl"
@@ -337,50 +354,75 @@ local function identity(x) return x end
 ---@param x boolean
 local function toggle(x) return not x end
 
--- Find the sight entity, then update its state.
+-- Update the state of a sight entity.
+---@param gun CBaseAnimating
+---@param sight CBaseAnimating
+---@param info WeaponInfo
+---@param state_func fun(old: boolean, info: WeaponInfo, sights: CBaseAnimating): boolean
+local function UpdateSight(gun, sight, info, state_func)
+	if EasyConvars:GetBool(CVAR_DISABLE[info.cls]) then
+		-- Disabled, revert changes.
+		if info.disable_draw then
+			sight:SetRenderingEnabled(true);
+		end
+		if info.group ~= nil then
+			sight:SetBodygroup(info.group, info.on_state);
+		end
+		local orig = ORIG_MODELS[info.cls] .. vlua.select(Player.IsLeftHanded, "_lhand.mdl", ".mdl");
+		if sight:GetModelName() ~= orig or info.replaced then
+			local prev_skin = sight:GetMaterialGroupHash();
+			sight:SetModel(orig);
+			sight:SetMaterialGroupHash(prev_skin);
+			info.replaced = false;
+		end
+	else
+		-- Toggle the sight if ncessary.
+		local prev_enabled = Storage.LoadBoolean(gun, CTX_ENABLED, true)
+		local enabled = state_func(prev_enabled, info, sight)
+		if enabled ~= prev_enabled then
+			Storage.SaveBoolean(gun, CTX_ENABLED, enabled)
+			-- local pos = RotatePosition(sight:GetAbsOrigin(), sight:GetAngles(), info.snd_pos);
+			-- print("Snd pos: " .. tostring(pos - gun:GetOrigin()))
+			if EasyConvars:GetBool(CVAR_AUTO) then
+				gun:EmitSound(vlua.select(enabled, info.sounds.auto_on, info.sounds.auto_off));
+			else
+				gun:EmitSound(vlua.select(enabled, info.sounds.btn_on, info.sounds.btn_off));
+			end
+		end
+		local replace = vlua.select(Player.IsLeftHanded, info.replace_lhand, info.replace_rhand);
+		if replace then
+			local mdl = sight:GetModelName();
+			-- After a reload the model ends up null/invisible, we need to always set the first time.
+			if mdl ~= replace or not info.replaced then
+				print(string.format("Togglesight: Override model \"%s\" -> \"%s\"", mdl, replace));
+				-- Save/restore the skin, for the Shooter Pistol. Harmless otherwise.
+				local prev_skin = sight:GetMaterialGroupHash();
+				sight:SetModel(replace);
+				sight:SetMaterialGroupHash(prev_skin);
+				info.replaced = true;
+			end
+		end
+		if info.disable_draw then
+			--print(string.format("Set sight for %s, alpha=%i", info.name, alpha))
+			sight:SetRenderingEnabled(enabled);
+		end
+		if info.group ~= nil then
+			local state = vlua.select(enabled, info.on_state, info.off_state);
+			--print(string.format("Set sight for %s, body %i = %i", info.name, info.group, state));
+			sight:SetBodygroup(info.group, state)
+		end
+	end
+end
+
+-- Find a sight, then update it.
 ---@param gun CBaseAnimating
 ---@param info WeaponInfo
 ---@param state_func fun(old: boolean, info: WeaponInfo, sights: CBaseAnimating): boolean
-local function UpdateSight(gun, info, state_func)
-	-- @type CBaseAnimating
+local function FindAndUpdateSight(gun, info, state_func)
 	local child = gun:FirstMoveChild() --[[@as CBaseAnimating]]
 	while child do
 		if child:GetClassname() == "reflex_sights" then
-			-- Found, toggle if required.
-			local prev_enabled = Storage.LoadBoolean(gun, CTX_ENABLED, true)
-			local enabled = state_func(prev_enabled, info, child)
-			if enabled ~= prev_enabled then
-				Storage.SaveBoolean(gun, CTX_ENABLED, enabled)
-				-- local pos = RotatePosition(child:GetAbsOrigin(), child:GetAngles(), info.snd_pos);
-				-- print("Snd pos: " .. tostring(pos - gun:GetOrigin()))
-				if EasyConvars:GetBool(CVAR_AUTO) then
-					gun:EmitSound(vlua.select(enabled, info.sounds.auto_on, info.sounds.auto_off));
-				else
-					gun:EmitSound(vlua.select(enabled, info.sounds.btn_on, info.sounds.btn_off));
-				end
-			end
-			local replace = vlua.select(Player.IsLeftHanded, info.replace_lhand, info.replace_rhand);
-			if replace then
-				local mdl = child:GetModelName();
-				-- After a reload the model ends up null/invisible, we need to always set the first time.
-				if mdl ~= replace or not info.replaced then
-					print(string.format("Togglesight: Override model \"%s\" -> \"%s\"", mdl, replace));
-					-- Save/restore the skin, for the Shooter Pistol. Harmless otherwise.
-					local prev_skin = child:GetMaterialGroupHash();
-					child:SetModel(replace);
-					child:SetMaterialGroupHash(prev_skin);
-					info.replaced = true;
-				end
-			end
-			if info.disable_draw then
-				--print(string.format("Set sight for %s, alpha=%i", info.name, alpha))
-				child:SetRenderingEnabled(enabled);
-			end
-			if info.group ~= nil then
-				local state = vlua.select(enabled, info.on_state, info.off_state);
-				--print(string.format("Set sight for %s, body %i = %i", info.name, info.group, state));
-				child:SetBodygroup(info.group, state)
-			end
+			UpdateSight(gun, child, info, state_func)
 		end
 		child = child:NextMovePeer()
 	end
@@ -395,7 +437,20 @@ local function UpdateHeldSight(state_func)
 	end
 	local info = weapons[gun:GetClassname()]
 	if info ~= nil then
-		UpdateSight(gun, info, state_func);
+		FindAndUpdateSight(gun, info, state_func);
+	end
+end
+
+-- Update disabled state on the held weapon, if it matches.
+---@param cls string the weapon that changed.
+local function UpdateDisabled(cls)
+	local gun = Player:GetWeapon() --[[@as CBaseAnimating]]
+	if gun == nil or gun:GetClassname() ~= cls then
+		return
+	end
+	local info = weapons[gun:GetClassname()]
+	if info ~= nil then
+		FindAndUpdateSight(gun, info, identity);
 	end
 end
 
@@ -454,7 +509,7 @@ local function IsEyeClose(old_state, info, sights)
 	local dist_right = eye_right:Dot(sight_up)^2 + eye_right:Dot(sight_right)^2;
 
 	-- Increase by the eye distance, to get a cone.
-	local range = info.auto_range;
+	local range = EasyConvars:GetFloat(CVAR_AUTO_RANGE[info.cls]);
 	if old_state then
 		-- Add some hysteresis - if in range, need to pull further out to detach.
 		range = range + 2;
@@ -511,6 +566,10 @@ EasyConvars:RegisterToggle(
 	end
 );
 EasyConvars:SetPersistent(CVAR_AUTO, true);
+EasyConvars:RegisterConvar(CVAR_AUTO_RANGE[CLS_PISTOL], weapons[CLS_PISTOL].auto_range, "Determines how close you need to be to trigger the pistol's sight.")
+EasyConvars:RegisterConvar(CVAR_AUTO_RANGE[CLS_SMG], weapons[CLS_SMG].auto_range, "Determines how close you need to be to trigger the SMG's sight.")
+EasyConvars:RegisterToggle(CVAR_DISABLE[CLS_PISTOL], false, "Disable modifying the pistol.", nil, function() UpdateDisabled(CLS_PISTOL) end)
+EasyConvars:RegisterToggle(CVAR_DISABLE[CLS_SMG], false, "Disable modifying the SMG.", nil, function() UpdateDisabled(CLS_SMG) end)
 
 local function Init()
 	SetupCallbacks(EasyConvars:GetBool(CVAR_AUTO));
@@ -519,7 +578,7 @@ local function Init()
 	for info_cls, info in pairs(weapons) do
 		local gun = Entities:FindByClassnameNearest(info_cls, hand_pos, 128) --[[@as CBaseAnimating?]]
 		if gun ~= nil then
-			UpdateSight(gun, info, identity)
+			FindAndUpdateSight(gun, info, identity)
 		end
 	end
 	print("TS Toggle Reflex Sights active.")
@@ -529,3 +588,24 @@ ListenToPlayerEvent("vr_player_ready", Init);
 -- Whenever weapons are switched or the hand swaps, update in case they got out of sync.
 ListenToPlayerEvent("weapon_switch", function() UpdateHeldSight(identity) end)
 ListenToPlayerEvent("primary_hand_changed", function() UpdateHeldSight(identity) end)
+
+local function makeMenu()
+	DebugMenu:AddCategory(MENU_ID, "Reflex Control")
+
+	-- TODO: Enable/disable menu options?
+	DebugMenu:AddToggle(MENU_ID, CVAR_AUTO, "Toggle Automatically", CVAR_AUTO, function() EasyConvars:GetBool(CVAR_AUTO) end)
+	DebugMenu:AddToggle(MENU_ID, "tspen_reflex_control_debug", "Visualise Range", function(value) DEBUG = value end, false)
+	DebugMenu:AddSeparator(MENU_ID)
+
+	DebugMenu:AddLabel(MENU_ID, "tspen_reflex_control_pistol", "Pistol (" .. weapons.hlvr_weapon_energygun.name .. ")")
+	DebugMenu:AddToggle(MENU_ID, "tspen_reflex_control_pistol_disable", "Disable Changes", CVAR_DISABLE[CLS_PISTOL])
+	DebugMenu:AddSlider(MENU_ID, CTRL_PISTOL_AUTO_RANGE, "Auto Range", 0.1, 10, false, CVAR_AUTO_RANGE[CLS_PISTOL], 1, 0.1, nil)
+
+	DebugMenu:AddSeparator(MENU_ID)
+	DebugMenu:AddLabel(MENU_ID, "tspen_reflex_control_smg", "SMG (RapidFire)")
+	DebugMenu:AddToggle(MENU_ID, "tspen_reflex_control_smg_disable", "Disable Changes", CVAR_DISABLE[CLS_SMG])
+	DebugMenu:AddSlider(MENU_ID, CTRL_SMG_AUTO_RANGE, "Auto Range", 0.1, 10, false, CVAR_AUTO_RANGE[CLS_SMG], 1, 0.1, nil)
+
+end
+
+makeMenu()
