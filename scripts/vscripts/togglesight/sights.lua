@@ -53,11 +53,11 @@ local SND_FLIP = {
 -- it though.
 local ATTACH_REFLEX = "reticule_attach"
 
-local CTX_ENABLED = "tspen_toggle_sight_enabled" -- Think function context
-local EVT_BUTTON_CTX = "tspen_toggle_sight" -- Context for Alyxlib buttons
+local CTX_ENABLED = "tspen_reflex_control_enabled" -- Think function context
+local EVT_BUTTON_CTX = "tspen_reflex_control" -- Context for Alyxlib buttons
 --- Folder replacement models are found in.
 local REPLACE_PREFIX = "models/weapons/ts_togglesight/"
-local CVAR_AUTO = "tspen_reflex_control_auto"
+local CVAR_MODE = "tspen_reflex_control_mode"
 local CVAR_AUTO_RANGE = {
 	[CLS_PISTOL]="tspen_reflex_control_pistol_auto_range",
 	[CLS_SMG]="tspen_reflex_control_smg_auto_range",
@@ -342,7 +342,12 @@ end
 
 RegisterAlyxLibDiagnostic(ADDON_ID, function ()
 	local diag = {"Running"};
-	table.insert(diag, "Mode: " .. vlua.select(EasyConvars:GetBool(CVAR_AUTO) or false, "Auto", "Manual"));
+	local modes = {
+		[0] = "Auto",
+		[1] = "Manual",
+	}
+	local mode_int = EasyConvars:GetInt(CVAR_MODE);
+	table.insert(diag, "Mode: " .. (modes[mode_int] or ("Invalid = %i"):format(mode_int)));
 	table.insert(diag, ("Eye Distance (Hammer Units): %f"):format(EyeDist()))
 	for cls, weapon in pairs(weapons) do
 		table.insert(diag, ("Registered weapon for %s = %s:"):format(cls, weapon.name))
@@ -404,7 +409,8 @@ local function UpdateSight(gun, sight, info, state_func)
 			Storage.SaveBoolean(gun, CTX_ENABLED, enabled)
 			-- local pos = RotatePosition(sight:GetAbsOrigin(), sight:GetAngles(), info.snd_pos);
 			-- print("Snd pos: " .. tostring(pos - gun:GetOrigin()))
-			if EasyConvars:GetBool(CVAR_AUTO) then
+			-- In auto mode, reduce volume since it's going to swap occasionally.
+			if EasyConvars:GetInt(CVAR_MODE) == 0 then
 				gun:EmitSound(vlua.select(enabled, info.sounds.auto_on, info.sounds.auto_off));
 			else
 				gun:EmitSound(vlua.select(enabled, info.sounds.btn_on, info.sounds.btn_off));
@@ -565,14 +571,16 @@ local function AutoThink()
 	end
 end
 
-local function SetupCallbacks(auto)
+-- When the mode changes, configure the correct callbacks.
+--- @param mode 0|1|2
+local function ModeChanged(mode)
 	-- Avoid double-registering.
 	Input:StopListeningByContext(EVT_BUTTON_CTX);
 
-	if auto then
+	if mode == 0 then
 		-- Auto mode.
 		Player:SetContextThink("TSpen_ToggleSight_AutoThink", AutoThink, 0.0);
-	else
+	elseif mode == 1 then
 		Player:SetContextThink("TSpen_ToggleSight_AutoThink", nil, 0.0);
 		-- Button mode.
 		Input:ListenToButton(
@@ -580,25 +588,28 @@ local function SetupCallbacks(auto)
 			function() UpdateHeldSight(toggle) end,
 			EVT_BUTTON_CTX
 		);
+	else
+		Warning("Invalid Reflex Control mode " .. mode .. "!");
+		EasyConvars:SetInt(CVAR_MODE, 0);
 	end
 end
 
-EasyConvars:RegisterToggle(
-	CVAR_AUTO, true,
-	"If set the sight will enable automatically when aligned with the eye. " ..
-	"Otherwise, the Toggle Laser Sight button will be used.",
+EasyConvars:RegisterConvar(
+	CVAR_MODE, 0,
+	"Sets the behaviour. 0: The sight will enable automatically when aligned with the eye. " ..
+	"1: Use the Toggle Laser Sight button.",
 	nil, function(value)
-		SetupCallbacks(truthy(value))
+		ModeChanged(tonumber(value) or 0)
 	end
 );
-EasyConvars:SetPersistent(CVAR_AUTO, true);
+EasyConvars:SetPersistent(CVAR_MODE, true);
 EasyConvars:RegisterConvar(CVAR_AUTO_RANGE[CLS_PISTOL], weapons[CLS_PISTOL].auto_range, "Determines how close you need to be to trigger the pistol's sight.")
 EasyConvars:RegisterConvar(CVAR_AUTO_RANGE[CLS_SMG], weapons[CLS_SMG].auto_range, "Determines how close you need to be to trigger the SMG's sight.")
 EasyConvars:RegisterToggle(CVAR_DISABLE[CLS_PISTOL], false, "Disable modifying the pistol.", nil, function() UpdateDisabled(CLS_PISTOL) end)
 EasyConvars:RegisterToggle(CVAR_DISABLE[CLS_SMG], false, "Disable modifying the SMG.", nil, function() UpdateDisabled(CLS_SMG) end)
 
 local function Init()
-	SetupCallbacks(EasyConvars:GetBool(CVAR_AUTO));
+	ModeChanged(EasyConvars:GetInt(CVAR_MODE) or 0);
 	-- Look for already-equipped weapons, toggle them in case we loaded from save.
 	local hand_pos = Player.PrimaryHand:GetAbsOrigin();
 	for info_cls, info in pairs(weapons) do
@@ -619,7 +630,10 @@ local function makeMenu()
 	DebugMenu:AddCategory(MENU_ID, "Reflex Control")
 
 	-- TODO: Enable/disable menu options?
-	DebugMenu:AddToggle(MENU_ID, CVAR_AUTO, "Toggle Automatically", CVAR_AUTO, function() return EasyConvars:GetBool(CVAR_AUTO) or true end)
+	DebugMenu:AddCycle(MENU_ID, CVAR_MODE, {
+		[0] = "Toggle Automatically",
+		[1] = "Use Toggle Laser Sights button",
+	}, CVAR_MODE)
 	DebugMenu:AddToggle(MENU_ID, "tspen_reflex_control_debug", "Visualise Range", function(value) DEBUG = value end, false)
 
 	DebugMenu:AddSeparator(MENU_ID, "tspen_reflex_control_pistol", "Pistol (" .. weapons.hlvr_weapon_energygun.name .. ")")
