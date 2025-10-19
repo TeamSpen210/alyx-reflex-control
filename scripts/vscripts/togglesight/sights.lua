@@ -94,6 +94,7 @@ local ORIG_MODELS = {
 -- Later set:
 ---@field replaced boolean? If the model has been replaced during this session.
 ---@field cls? string Classname for weapon.
+---@field errors? string[] Errors that occurred during parsing.
 
 ---@type table<string, WeaponInfo>
 local weapons = {
@@ -300,6 +301,7 @@ for cls, info in pairs(weapons) do
 	-- Allow specifying replace lhand/rhand standalone, for ambidexterous etc
 	-- sights.
 	info.cls = cls;
+	info.errors = {};
 	if info.replace or info.replace_lhand or info.replace_rhand then
 		if not info.replace_lhand then
 			info.replace_lhand = REPLACE_PREFIX .. info.replace .. "_lhand.vmdl"
@@ -343,6 +345,9 @@ RegisterAlyxLibDiagnostic(ADDON_ID, function ()
 		table.insert(diag, ("- Auto range: %i"):format(weapon.auto_range))
 		if weapon.group then
 			table.insert(diag, ("- Bodygroups: group %i, on=%q, off=%q"):format(weapon.group, weapon.on_state, weapon.off_state))
+		end
+		if weapon.errors and #weapon.errors > 0 then
+			table.insert(diag, ("- Errors: %s"):format(table.concat(weapon.errors, ",")));
 		end
 	end
 
@@ -409,7 +414,9 @@ local function UpdateSight(gun, sight, info, state_func)
 		if info.group ~= nil then
 			local state = vlua.select(enabled, info.on_state, info.off_state);
 			--print(string.format("Set sight for %s, body %i = %i", info.name, info.group, state));
-			sight:SetBodygroup(info.group, state)
+			if state ~= nil then
+				sight:SetBodygroup(info.group, state)
+			end
 		end
 	end
 end
@@ -424,7 +431,7 @@ local function FindAndUpdateSight(gun, info, state_func)
 		if child:GetClassname() == "reflex_sights" then
 			UpdateSight(gun, child, info, state_func)
 		end
-		child = child:NextMovePeer()
+		child = child:NextMovePeer() --[[@as CBaseAnimating]]
 	end
 end
 
@@ -471,6 +478,7 @@ local function IsEyeClose(old_state, info, sights)
 		if reflex_off:LengthSquared() < 0.1 then
 			-- It's right at the origin, probably not valid.
 			print("togglesight: ERROR, no sight position for gun " .. info.name .. "!");
+			info.errors[#info.errors+1] = "No sight position!";
 			-- Roughly where most sights are.
 			reflex_off = Vector(4, 0, 4);
 			reflex_pos = sights:TransformPointEntityToWorld(reflex_off);
@@ -510,6 +518,9 @@ local function IsEyeClose(old_state, info, sights)
 
 	-- Increase by the eye distance, to get a cone.
 	local range = EasyConvars:GetFloat(CVAR_AUTO_RANGE[info.cls]);
+	if range == nil then
+		range = info.auto_range;
+	end
 	if old_state then
 		-- Add some hysteresis - if in range, need to pull further out to detach.
 		range = range + 2;
@@ -529,15 +540,13 @@ local function IsEyeClose(old_state, info, sights)
 end
 
 local function AutoThink()
-	if not EasyConvars:GetBool(CVAR_AUTO) then
-		return; -- Non-auto, stop thinking.
-	end
 	-- Automatically toggle.
 	if not Player:HasWeaponEquipped() then
+		UpdateHeldSight(IsEyeClose);
+		return 0.05;
+	else
 		return 0.25; -- Wait for a weapon.
 	end
-	UpdateHeldSight(IsEyeClose);
-	return 0.05;
 end
 
 local function SetupCallbacks(auto)
@@ -548,6 +557,7 @@ local function SetupCallbacks(auto)
 		-- Auto mode.
 		Player:SetContextThink("TSpen_ToggleSight_AutoThink", AutoThink, 0.0);
 	else
+		Player:SetContextThink("TSpen_ToggleSight_AutoThink", nil, 0.0);
 		-- Button mode.
 		Input:ListenToButton(
 			"press", -1, DIGITAL_INPUT_TOGGLE_LASER_SIGHT, 1,
@@ -593,16 +603,14 @@ local function makeMenu()
 	DebugMenu:AddCategory(MENU_ID, "Reflex Control")
 
 	-- TODO: Enable/disable menu options?
-	DebugMenu:AddToggle(MENU_ID, CVAR_AUTO, "Toggle Automatically", CVAR_AUTO, function() EasyConvars:GetBool(CVAR_AUTO) end)
+	DebugMenu:AddToggle(MENU_ID, CVAR_AUTO, "Toggle Automatically", CVAR_AUTO, function() return EasyConvars:GetBool(CVAR_AUTO) or true end)
 	DebugMenu:AddToggle(MENU_ID, "tspen_reflex_control_debug", "Visualise Range", function(value) DEBUG = value end, false)
-	DebugMenu:AddSeparator(MENU_ID)
 
-	DebugMenu:AddLabel(MENU_ID, "tspen_reflex_control_pistol", "Pistol (" .. weapons.hlvr_weapon_energygun.name .. ")")
+	DebugMenu:AddSeparator(MENU_ID, "tspen_reflex_control_pistol", "Pistol (" .. weapons.hlvr_weapon_energygun.name .. ")")
 	DebugMenu:AddToggle(MENU_ID, "tspen_reflex_control_pistol_disable", "Disable Changes", CVAR_DISABLE[CLS_PISTOL])
 	DebugMenu:AddSlider(MENU_ID, CTRL_PISTOL_AUTO_RANGE, "Auto Range", 0.1, 10, false, CVAR_AUTO_RANGE[CLS_PISTOL], 1, 0.1, nil)
 
-	DebugMenu:AddSeparator(MENU_ID)
-	DebugMenu:AddLabel(MENU_ID, "tspen_reflex_control_smg", "SMG (RapidFire)")
+	DebugMenu:AddSeparator(MENU_ID, "tspen_reflex_control_smg", "SMG (RapidFire)")
 	DebugMenu:AddToggle(MENU_ID, "tspen_reflex_control_smg_disable", "Disable Changes", CVAR_DISABLE[CLS_SMG])
 	DebugMenu:AddSlider(MENU_ID, CTRL_SMG_AUTO_RANGE, "Auto Range", 0.1, 10, false, CVAR_AUTO_RANGE[CLS_SMG], 1, 0.1, nil)
 
