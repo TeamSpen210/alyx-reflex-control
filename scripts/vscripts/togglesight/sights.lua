@@ -143,7 +143,6 @@ local phys_sight = {
 		pos_lhand=Vector(5.8, 0, 3.8),
 		pos_rhand=Vector(5.8, 0, 3.8),
 	},
-	["2353427612"] = {name="Modern Warfare Renetti"},
 	["2406708838"] = {
 		name="DL-44 Blaster",
 		pos_lhand=Vector(-5.4, 14.5, 2.3),
@@ -218,6 +217,23 @@ for addon in Convars:GetStr("default_enabled_addons_list"):gmatch("[^,]+") do
 			-- Both are identical.
 			replace_lhand=REPLACE_PREFIX .. "luger_ambi.vmdl",
 			replace_rhand=REPLACE_PREFIX .. "luger_ambi.vmdl",
+		};
+		return;
+	end
+
+	if addon == "2353427612" then
+		print("togglesight: Modern Warfare Renetti mod detected, toggling sights.")
+		weapons[CLS_PISTOL] = {
+			name="Modern Warfare Renetti",
+			group=1,
+			on_state=1,
+			off_state=0,
+			auto_range=2,
+			snd_pos=Vector(3.55, 0.0, 3.6),
+			sounds=SND_ATTACH,
+			-- Both are identical.
+			replace_lhand=REPLACE_PREFIX .. "cod_renetti_ambi.vmdl",
+			replace_rhand=REPLACE_PREFIX .. "cod_renetti_ambi.vmdl",
 		};
 		return;
 	end
