@@ -11,6 +11,9 @@ local MENU_ID = "ts_togglesight"
 local CLS_PISTOL = "hlvr_weapon_energygun"
 local CLS_SMG = "hlvr_weapon_rapidfire"
 
+-- For testing both sights:
+-- hlvr_setall 31 48 258 100 10 30 1 0 10 30 2 0
+
 
 -- We have 4 sounds - on/off, via button and auto.
 -- When automatic it's much quieter.
@@ -54,6 +57,8 @@ local SND_FLIP = {
 local ATTACH_REFLEX = "reticule_attach"
 
 local CTX_ENABLED = "tspen_reflex_control_enabled" -- Think function context
+-- Context on guns, whether offhand is holding the gun.
+local CTX_IS_HELD = "tspen_reflex_control_held"
 local EVT_BUTTON_CTX = "tspen_reflex_control" -- Context for Alyxlib buttons
 --- Folder replacement models are found in.
 local REPLACE_PREFIX = "models/weapons/ts_togglesight/"
@@ -94,6 +99,7 @@ local ORIG_MODELS = {
 -- Later set:
 ---@field replaced boolean? If the model has been replaced during this session.
 ---@field cls? string Classname for weapon.
+---@field entity? CBaseAnimating? The entity for the weapon.
 ---@field errors? string[] Errors that occurred during parsing.
 
 ---@type table<string, WeaponInfo>
@@ -111,6 +117,8 @@ local weapons = {
 		snd_pos=Vector(0, -1.0, 4.0),
 	}
 };
+
+---@alias StateFunc fun(old: boolean, gun: CBaseAnimating, sights: CBaseAnimating, info: WeaponInfo): boolean
 
 -- Name + sight offsets, when inheriting.
 ---@class SightInfo
@@ -228,7 +236,7 @@ for addon in Convars:GetStr("default_enabled_addons_list"):gmatch("[^,]+") do
 			group=1,
 			on_state=1,
 			off_state=0,
-			auto_range=2,
+			auto_range=1.0,
 			snd_pos=Vector(3.55, 0.0, 3.6),
 			sounds=SND_ATTACH,
 			-- Both are identical.
@@ -352,8 +360,8 @@ RegisterAlyxLibDiagnostic(ADDON_ID, function ()
 	for cls, weapon in pairs(weapons) do
 		table.insert(diag, ("Registered weapon for %s = %s:"):format(cls, weapon.name))
 		if weapon.replace_lhand or weapon.replace_rhand then
-			table.insert(diag, "- Left-hand model: %s" .. (weapon.replace_lhand or "N/A"))
-			table.insert(diag, "- Right-hand model: %s" .. (weapon.replace_rhand or "N/A"))
+			table.insert(diag, "- Left-hand model: " .. (weapon.replace_lhand or "N/A"))
+			table.insert(diag, "- Right-hand model: " .. (weapon.replace_rhand or "N/A"))
 			if not weapon.replaced then
 				table.insert(diag, "- Not yet overridden.")
 			end
@@ -375,16 +383,28 @@ RegisterAlyxLibDiagnostic(ADDON_ID, function ()
     return true, table.concat(diag, "\n")
 end)
 
+--- Default state function, apply held-changes, or leave unchanged.
+---@param prev boolean
+---@param gun CBaseAnimating
+---@param sight CBaseAnimating
+---@param info WeaponInfo
+local function StateUnchanged(prev, gun, sight, info) 
+	if EasyConvars:GetInt(CVAR_MODE) == 2 then
+		return Storage.LoadBoolean(gun, CTX_IS_HELD, prev)
+	else
+		return prev;
+	end
+end
+
+--- Just toggle the gun.
 ---@param x boolean
-local function identity(x) return x end
----@param x boolean
-local function toggle(x) return not x end
+local function StateToggle(x) return not x end
 
 -- Update the state of a sight entity.
 ---@param gun CBaseAnimating
 ---@param sight CBaseAnimating
 ---@param info WeaponInfo
----@param state_func fun(old: boolean, info: WeaponInfo, sights: CBaseAnimating): boolean
+---@param state_func StateFunc
 local function UpdateSight(gun, sight, info, state_func)
 	if EasyConvars:GetBool(CVAR_DISABLE[info.cls]) then
 		-- Disabled, revert changes.
@@ -404,7 +424,7 @@ local function UpdateSight(gun, sight, info, state_func)
 	else
 		-- Toggle the sight if ncessary.
 		local prev_enabled = Storage.LoadBoolean(gun, CTX_ENABLED, true)
-		local enabled = state_func(prev_enabled, info, sight)
+		local enabled = state_func(prev_enabled, gun, sight, info)
 		if enabled ~= prev_enabled then
 			Storage.SaveBoolean(gun, CTX_ENABLED, enabled)
 			-- local pos = RotatePosition(sight:GetAbsOrigin(), sight:GetAngles(), info.snd_pos);
@@ -446,7 +466,7 @@ end
 -- Find a sight, then update it.
 ---@param gun CBaseAnimating
 ---@param info WeaponInfo
----@param state_func fun(old: boolean, info: WeaponInfo, sights: CBaseAnimating): boolean
+---@param state_func StateFunc
 local function FindAndUpdateSight(gun, info, state_func)
 	local child = gun:FirstMoveChild() --[[@as CBaseAnimating]]
 	while child do
@@ -458,7 +478,7 @@ local function FindAndUpdateSight(gun, info, state_func)
 end
 
 -- Update the held weapon.
----@param state_func fun(old: boolean, info: WeaponInfo, sights: CBaseAnimating): boolean
+---@param state_func StateFunc
 local function UpdateHeldSight(state_func)
 	local gun = Player:GetWeapon() --[[@as CBaseAnimating]]
 	if gun == nil then
@@ -466,6 +486,8 @@ local function UpdateHeldSight(state_func)
 	end
 	local info = weapons[gun:GetClassname()]
 	if info ~= nil then
+		-- Reset, in case it was replaced etc.
+		info.entity = gun;
 		FindAndUpdateSight(gun, info, state_func);
 	end
 end
@@ -479,16 +501,18 @@ local function UpdateDisabled(cls)
 	end
 	local info = weapons[gun:GetClassname()]
 	if info ~= nil then
-		FindAndUpdateSight(gun, info, identity);
+		info.entity = gun;
+		FindAndUpdateSight(gun, info, StateUnchanged);
 	end
 end
 
 -- Calculate whether the eye is close to the sights.
 ---@param old_state boolean
----@param info WeaponInfo
+---@param gun CBaseAnimating
 ---@param sights CBaseAnimating
+---@param info WeaponInfo
 ---@returns boolean
-local function IsEyeClose(old_state, info, sights)
+local function IsEyeClose(old_state, gun, sights, info)
 	-- Location of the reflex sight screen, in world.
 	local reflex_pos;
 	local reflex_off = vlua.select(Player.IsLeftHanded, info.sight_pos_lhand, info.sight_pos_rhand);
@@ -561,9 +585,29 @@ local function IsEyeClose(old_state, info, sights)
 	return dist_left < range or dist_right < range;
 end
 
+--- Record whenever a two-hand grab occurs, upate the sight if necessary.
+local function TwoHandGrab(cls, grabbed)
+	local gun = Player:GetWeapon();
+	-- Msg(("Grab %s = %s"):format(cls, tostring(grabbed)))
+	if gun ~= nil and gun:GetClassname() == cls then
+		Storage.SaveBoolean(gun, CTX_IS_HELD, grabbed);
+		if EasyConvars:GetInt(CVAR_MODE) == 2 then
+			UpdateHeldSight(StateUnchanged)
+		end
+	else
+		-- Gun is not yet fully equipped. Weapon switch event will then apply
+		-- this change.
+		local info = weapons[cls];
+		if info ~= nil and info.entity ~= nil then
+			Storage.SaveBoolean(info.entity, CTX_IS_HELD, grabbed);
+			FindAndUpdateSight(info.entity, info, function() return grabbed end);
+		end
+	end
+end
+
 local function AutoThink()
 	-- Automatically toggle.
-	if not Player:HasWeaponEquipped() then
+	if Player:HasWeaponEquipped() then
 		UpdateHeldSight(IsEyeClose);
 		return 0.05;
 	else
@@ -577,17 +621,21 @@ local function ModeChanged(mode)
 	-- Avoid double-registering.
 	Input:StopListeningByContext(EVT_BUTTON_CTX);
 
-	if mode == 0 then
-		-- Auto mode.
+	Msg(("ModeChange: type=%s, value=%s"):format(type(mode), tostring(mode)))
+
+	if mode == 0 then -- Auto mode.
 		Player:SetContextThink("TSpen_ToggleSight_AutoThink", AutoThink, 0.0);
-	elseif mode == 1 then
+	elseif mode == 1 then -- Button mode.
 		Player:SetContextThink("TSpen_ToggleSight_AutoThink", nil, 0.0);
-		-- Button mode.
 		Input:ListenToButton(
 			"press", -1, DIGITAL_INPUT_TOGGLE_LASER_SIGHT, 1,
-			function() UpdateHeldSight(toggle) end,
+			function() UpdateHeldSight(StateToggle) end,
 			EVT_BUTTON_CTX
 		);
+	elseif mode == 2 then -- Offhand mode
+		Player:SetContextThink("TSpen_ToggleSight_AutoThink", nil, 0.0);
+		-- Refresh, this checks the state.
+		UpdateHeldSight(StateUnchanged)
 	else
 		Warning("Invalid Reflex Control mode " .. mode .. "!");
 		EasyConvars:SetInt(CVAR_MODE, 0);
@@ -615,28 +663,39 @@ local function Init()
 	for info_cls, info in pairs(weapons) do
 		local gun = Entities:FindByClassnameNearest(info_cls, hand_pos, 128) --[[@as CBaseAnimating?]]
 		if gun ~= nil then
-			FindAndUpdateSight(gun, info, identity)
+			FindAndUpdateSight(gun, info, StateUnchanged)
 		end
+	end
+
+	Player:GetPublicScriptScope()["ToggleSight"] = function()
+		FireGameEvent("player_pistol_toggle_lasersight", {userid=Player:entindex()});
 	end
 	print("TS Toggle Reflex Sights active.")
 end
 ListenToPlayerEvent("vr_player_ready", Init);
 
 -- Whenever weapons are switched or the hand swaps, update in case they got out of sync.
-ListenToPlayerEvent("weapon_switch", function() UpdateHeldSight(identity) end)
-ListenToPlayerEvent("primary_hand_changed", function() UpdateHeldSight(identity) end)
+ListenToPlayerEvent("weapon_switch", function()	UpdateHeldSight(StateUnchanged) end)
+ListenToPlayerEvent("primary_hand_changed", function() UpdateHeldSight(StateUnchanged) end)
+
+-- Always listen, in case the player swaps mode while holding (console command?)
+ListenToGameEvent("two_hand_pistol_grab_start", function() TwoHandGrab(CLS_PISTOL, true) end, weapons);
+ListenToGameEvent("two_hand_pistol_grab_end", function() TwoHandGrab(CLS_PISTOL, false) end, weapons);
+ListenToGameEvent("two_hand_rapidfire_grab_start", function() TwoHandGrab(CLS_SMG, true) end, weapons);
+ListenToGameEvent("two_hand_rapidfire_grab_end", function() TwoHandGrab(CLS_SMG, false) end, weapons);
 
 local function makeMenu()
 	DebugMenu:AddCategory(MENU_ID, "Reflex Control")
 
 	-- TODO: Enable/disable menu options?
 	DebugMenu:AddCycle(MENU_ID, CVAR_MODE, {
-		[0] = "Toggle Automatically",
-		[1] = "Use Toggle Laser Sights button",
+		{value=0, text="Toggle Automatically"},
+		{value=1, text="Use Toggle Laser Sights button"},
+		{value=2, text="Enable from Offhand"},
 	}, CVAR_MODE)
 	DebugMenu:AddToggle(MENU_ID, "tspen_reflex_control_debug", "Visualise Range", function(value) DEBUG = value end, false)
 
-	DebugMenu:AddSeparator(MENU_ID, "tspen_reflex_control_pistol", "Pistol (" .. weapons.hlvr_weapon_energygun.name .. ")")
+	DebugMenu:AddSeparator(MENU_ID, "tspen_reflex_control_pistol", "Pistol (" .. weapons[CLS_PISTOL].name .. ")")
 	DebugMenu:AddToggle(MENU_ID, "tspen_reflex_control_pistol_disable", "Disable Changes", CVAR_DISABLE[CLS_PISTOL])
 	DebugMenu:AddSlider(MENU_ID, CTRL_PISTOL_AUTO_RANGE, "Auto Range", 0.1, 10, false, CVAR_AUTO_RANGE[CLS_PISTOL], 1, 0.1, nil)
 
