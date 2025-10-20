@@ -180,7 +180,8 @@ local invis_sight = {
 		pos_rhand=Vector(5, 0, 4),
 	},
 	["2291028898"] = {name="Doom EMG Pistol"},
-	["2251436253"] = {name="TF2 Pistol"}, -- Uses default model.
+	 -- Default model, with frame materials set invisible.
+	["2251436253"] = {name="TF2 Pistol"},
 }
 
 -- Config for standard Alyxgun.
@@ -239,9 +240,7 @@ for addon in Convars:GetStr("default_enabled_addons_list"):gmatch("[^,]+") do
 			auto_range=1.0,
 			snd_pos=Vector(3.55, 0.0, 3.6),
 			sounds=SND_ATTACH,
-			-- Both are identical.
-			replace_lhand=REPLACE_PREFIX .. "cod_renetti_ambi.vmdl",
-			replace_rhand=REPLACE_PREFIX .. "cod_renetti_ambi.vmdl",
+			replace="cod_renetti",
 		};
 		return;
 	end
@@ -257,7 +256,7 @@ for addon in Convars:GetStr("default_enabled_addons_list"):gmatch("[^,]+") do
 			auto_range=2,
 			snd_pos=Vector(4.8, 0, 4.0),
 			sounds=SND_FLIP,
-			replace="mcmessenger"
+			replace="mcmessenger",
 		};
 		return;
 	end
