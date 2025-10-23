@@ -290,6 +290,21 @@ for addon in Convars:GetStr("default_enabled_addons_list"):gmatch("[^,]+") do
 		return;
 	end
 
+	if addon == "2260861413" then
+		print("togglesight: Anticitizen USP Match mod detected, toggling sights.")
+		weapons[CLS_PISTOL] = {
+			name="USP Match",
+			group=1,
+			on_state=1,
+			off_state=0,
+			auto_range=2,
+			snd_pos=Vector(3, 0, 3),
+			sounds=SND_HOLO,
+			replace="anticitizen_usp",
+		};
+		return;
+	end
+
 	if default_sight[addon] ~= nil then
 		-- Just uses the regular one, copy the config.
 		print("togglesight: " .. default_sight[addon] .. " detected, uses standard sights.")
