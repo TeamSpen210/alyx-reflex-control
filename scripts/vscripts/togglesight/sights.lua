@@ -74,6 +74,7 @@ local CVAR_DISABLE = {
 local CTRL_PISTOL_AUTO_RANGE = "ts_togglesight_pistol_auto_range";
 local CTRL_SMG_AUTO_RANGE = "ts_togglesight_smg_auto_range";
 local DEBUG = false;
+-- So we know what to swap back to 
 local ORIG_MODELS = {
 	[CLS_PISTOL]="models/weapons/vr_alyxgun/vr_alyxgun_attach_shroud",
 	[CLS_SMG]="models/weapons/vr_ipistol/ipistol_holosight",
@@ -395,8 +396,8 @@ RegisterAlyxLibDiagnostic(ADDON_ID, function ()
 				table.insert(diag, "- Not yet overridden.")
 			end
 		end
-		table.insert(diag, ("- Left-hand sights offset: %q"):format(weapon.sight_pos_lhand or "Not calculated"))
-		table.insert(diag, ("- Right-hand sights offset: %q"):format(weapon.sight_pos_rhand or "Not calculated"))
+		table.insert(diag, "- Left-hand sights offset: " .. (weapon.sight_pos_lhand or "Not calculated"))
+		table.insert(diag, "- Right-hand sights offset: " .. (weapon.sight_pos_rhand or "Not calculated"))
 		if weapon.disable_draw then
 			table.insert(diag, "- Disables draw to hide.")
 		end
@@ -497,12 +498,13 @@ end
 ---@param info WeaponInfo
 ---@param state_func StateFunc
 local function FindAndUpdateSight(gun, info, state_func)
-	local child = gun:FirstMoveChild() --[[@as CBaseAnimating]]
+	local child = gun:FirstMoveChild()
 	while child do
 		if child:GetClassname() == "reflex_sights" then
-			UpdateSight(gun, child, info, state_func)
+			local sight = child --[[@as CBaseAnimating]]
+			UpdateSight(gun, sight, info, state_func)
 		end
-		child = child:NextMovePeer() --[[@as CBaseAnimating]]
+		child = child:NextMovePeer()
 	end
 end
 
@@ -541,6 +543,7 @@ end
 ---@param sights CBaseAnimating
 ---@param info WeaponInfo
 ---@returns boolean
+---@diagnostic disable-next-line: unused-local
 local function IsEyeClose(old_state, gun, sights, info)
 	-- Location of the reflex sight screen, in world.
 	local reflex_pos;
@@ -572,14 +575,12 @@ local function IsEyeClose(old_state, gun, sights, info)
 		return false
 	end
 
-	-- Distance between eyes, seems to be in cm. 6.285 is about the average IPD.
-	local eye_dist = EyeDist();
-
 	-- Offset from player eye center to reflex
 	local eye_off = Player:EyePosition() - reflex_pos;
 	-- Local camera right.
 	local player_right = Player.HMDAvatar:GetRightVector();
 	-- Left/right eye offset
+	local eye_dist = EyeDist();
 	local eye_left = eye_off + (player_right * -eye_dist);
 	local eye_right = eye_off + (player_right * eye_dist);
 
@@ -674,7 +675,7 @@ end
 EasyConvars:RegisterConvar(
 	CVAR_MODE, 0,
 	"Sets the behaviour. 0: The sight will enable automatically when aligned with the eye. " ..
-	"1: Use the Toggle Laser Sight button.",
+	"1: Use the Toggle Laser Sight button. " .. "2: Enable when gripped with the offhand.",
 	nil, function(value)
 		ModeChanged(tonumber(value) or 0)
 	end
@@ -712,6 +713,7 @@ ListenToGameEvent("two_hand_pistol_grab_start", function() TwoHandGrab(CLS_PISTO
 ListenToGameEvent("two_hand_pistol_grab_end", function() TwoHandGrab(CLS_PISTOL, false) end, weapons);
 ListenToGameEvent("two_hand_rapidfire_grab_start", function() TwoHandGrab(CLS_SMG, true) end, weapons);
 ListenToGameEvent("two_hand_rapidfire_grab_end", function() TwoHandGrab(CLS_SMG, false) end, weapons);
+
 
 local function makeMenu()
 	DebugMenu:AddCategory(MENU_ID, "Reflex Control")
