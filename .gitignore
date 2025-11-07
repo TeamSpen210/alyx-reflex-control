@@ -3,3 +3,13 @@
 __pycache__
 __test*
 *.blend1
+
+
+# AlyxLib ignores
+scripts/vscripts/alyxlib
+scripts/vscripts/game/gameinit.lua
+scripts/vlua_globals.lua
+.vscode/alyxlib.code-snippets
+.vscode/vlua_snippets.code-snippets
+panorama/scripts/custom_game/panorama_lua.js
+panorama/scripts/custom_game/panoramadoc.js

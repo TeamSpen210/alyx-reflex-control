@@ -6,7 +6,7 @@ require "alyxlib.globals"
 
 local version = "v1.0.0"
 
-local ADDON_ID = RegisterAlyxLibAddon("Reflex Control", version, "???", "ts_togglesight", "v2.0.0")
+local ADDON_ID = RegisterAlyxLibAddon("Reflex Control", version, "3601100812", "ts_togglesight", "v2.0.0")
 local MENU_ID = "ts_togglesight"
 local CLS_PISTOL = "hlvr_weapon_energygun"
 local CLS_SMG = "hlvr_weapon_rapidfire"
