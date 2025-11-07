@@ -1,4 +1,3 @@
-## Description
 Reflex Control adds the ability to power on and off the reflex sight upgrade for the Pistol and SMG, making it less obtrusive when you're not aiming down sights. Three modes are available:
 [list]
 [*] Automatically activates when you align your eyes with the sight.
@@ -6,9 +5,9 @@ Reflex Control adds the ability to power on and off the reflex sight upgrade for
 [*] Activated when stabilising the gun with your offhand.
 [/list]
 
-In addition to the regular pistol, the mod also detects and supports many of the pistol replacement mods available. For many of these the sight is a physical object not a hologram, so when inactive the entire sight module is removed from the gun, if possible leaving behind any mounting equipment to indicate the sight is owned. It doesn't support custom "generic" pistols however.
+In addition to the regular pistol and SMG, the mod also detects and supports many of the pistol replacement mods available. For many of these the sight is a physical object not a hologram, so when inactive the entire sight module is removed from the gun, if possible leaving behind any mounting equipment to indicate the sight is owned. It doesn't support custom "generic" pistols however.
 
-This mod requires Alyxlib to be installed, and can be configured via its menu system. If you want your configuration to persist, options can be set by console variables with a `tspen_reflex_control_` prefix.
+This mod requires [url=https://steamcommunity.com/sharedfiles/filedetails/?id=3329679071]AlyxLib[/url] to work, and can be configured via its menu system. If you want your configuration to persist, options can be set by console variables with a `tspen_reflex_control_` prefix.
 
 Full list of specially handled weapons:
 [*] [url=https://steamcommunity.com/sharedfiles/filedetails/?id=2260861413]Anti-Citizen USP Match[/url] (Hologram toggles)

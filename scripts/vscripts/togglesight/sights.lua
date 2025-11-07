@@ -200,7 +200,7 @@ local standard_pistol = {
 
 for addon in Convars:GetStr("default_enabled_addons_list"):gmatch("[^,]+") do
 	if addon == "2482808860" then
-		print("togglesight: Shooter Pistol mod detected, toggling sights.")
+		print("Reflex Control: Shooter Pistol mod detected, toggling sights.")
 		weapons[CLS_PISTOL] = {
 			name="Shooter Pistol",
 			group=1,
@@ -215,7 +215,7 @@ for addon in Convars:GetStr("default_enabled_addons_list"):gmatch("[^,]+") do
 	end
 
 	if addon == "2122819116" then
-		print("togglesight: Luger P08 mod detected, toggling sights.")
+		print("Reflex Control: Luger P08 mod detected, toggling sights.")
 		weapons[CLS_PISTOL] = {
 			name="Luger P08",
 			group=1,
@@ -232,7 +232,7 @@ for addon in Convars:GetStr("default_enabled_addons_list"):gmatch("[^,]+") do
 	end
 
 	if addon == "2353427612" then
-		print("togglesight: Modern Warfare Renetti mod detected, toggling sights.")
+		print("Reflex Control: Modern Warfare Renetti mod detected, toggling sights.")
 		weapons[CLS_PISTOL] = {
 			name="Modern Warfare Renetti",
 			group=1,
@@ -248,7 +248,7 @@ for addon in Convars:GetStr("default_enabled_addons_list"):gmatch("[^,]+") do
 
 	-- These two are both made by MCMessenger, and share a sight.
 	if addon == "2126368719" then
-		print("togglesight: Halo M6C mod detected, toggling sights.")
+		print("Reflex Control: Halo M6C mod detected, toggling sights.")
 		weapons[CLS_PISTOL] = {
 			name="Halo M6C",
 			group=1,
@@ -262,7 +262,7 @@ for addon in Convars:GetStr("default_enabled_addons_list"):gmatch("[^,]+") do
 		return;
 	end
 	if addon == "2168778468" then
-		print("togglesight: Walther PPK mod detected, toggling sights.")
+		print("Reflex Control: Walther PPK mod detected, toggling sights.")
 		weapons[CLS_PISTOL] = {
 			name="Walther PPK",
 			group=1,
@@ -277,7 +277,7 @@ for addon in Convars:GetStr("default_enabled_addons_list"):gmatch("[^,]+") do
 	end
 
 	if addon == "2257869330" then
-		print("togglesight: SoggyMicrowaveNugget's USP Match mod detected, toggling sights.")
+		print("Reflex Control: SoggyMicrowaveNugget's USP Match mod detected, toggling sights.")
 		weapons[CLS_PISTOL] = {
 			name="USP Match",
 			group=1,
@@ -292,7 +292,7 @@ for addon in Convars:GetStr("default_enabled_addons_list"):gmatch("[^,]+") do
 	end
 
 	if addon == "2260861413" then
-		print("togglesight: Anticitizen USP Match mod detected, toggling sights.")
+		print("Reflex Control: Anticitizen USP Match mod detected, toggling sights.")
 		weapons[CLS_PISTOL] = {
 			name="USP Match",
 			group=1,
@@ -308,7 +308,7 @@ for addon in Convars:GetStr("default_enabled_addons_list"):gmatch("[^,]+") do
 
 	if default_sight[addon] ~= nil then
 		-- Just uses the regular one, copy the config.
-		print("togglesight: " .. default_sight[addon] .. " detected, uses standard sights.")
+		print("Reflex Control: " .. default_sight[addon] .. " detected, uses standard sights.")
 		standard_pistol.name = default_sight[addon];
 		weapons[CLS_PISTOL] = standard_pistol;
 		return;
@@ -317,7 +317,7 @@ for addon in Convars:GetStr("default_enabled_addons_list"):gmatch("[^,]+") do
 	local sight = phys_sight[addon]
 	if sight ~= nil then
 		-- It's not disableable, it'll be "removed" when not used.
-		print("togglesight: " .. sight.name .. " detected, hiding/showing physical sight.")
+		print("Reflex Control: " .. sight.name .. " detected, hiding/showing physical sight.")
 		weapons[CLS_PISTOL] = {
 			name=sight.name,
 			disable_draw=true,
@@ -332,7 +332,7 @@ for addon in Convars:GetStr("default_enabled_addons_list"):gmatch("[^,]+") do
 
 	sight = invis_sight[addon]
 	if sight ~= nil then
-		print("togglesight: " .. sight.name .. " detected, hiding/showing holo sight.")
+		print("Reflex Control: " .. sight.name .. " detected, hiding/showing holo sight.")
 		weapons[CLS_PISTOL] = {
 			name=sight.name,
 			disable_draw=true,
@@ -345,7 +345,7 @@ for addon in Convars:GetStr("default_enabled_addons_list"):gmatch("[^,]+") do
 		return;
 	end
 end
-print("togglesight: No known pistol mods detected.")
+print("Reflex Control: No known pistol mods detected.")
 weapons[CLS_PISTOL] = standard_pistol;
 
 end)()
