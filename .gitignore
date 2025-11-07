@@ -4,6 +4,14 @@ __pycache__
 __test*
 *.blend1
 
+# Copies of original models
+modelsrc/**/*.gltf
+modelsrc/**/*.bin
+modelsrc/**/*.vmdl
+modelsrc/**/*.vmat
+modelsrc/**/*.dmx
+modelsrc/**/*.png
+
 
 # AlyxLib ignores
 scripts/vscripts/alyxlib
