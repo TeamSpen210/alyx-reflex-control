@@ -10,7 +10,7 @@ In addition to the regular pistol and SMG, the mod also detects and supports man
 This mod requires [url=https://steamcommunity.com/sharedfiles/filedetails/?id=3329679071]AlyxLib[/url] to work, and can be configured via its menu system. If you want your configuration to persist, options can be set by console variables with a `tspen_reflex_control_` prefix.
 
 Full list of specially handled weapons:
-[*] [url=https://steamcommunity.com/sharedfiles/filedetails/?id=2260861413]Anti-Citizen USP Match[/url] (Hologram toggles)
+[*] [url=https://steamcommunity.com/sharedfiles/filedetails/?id=2260861413]Anti-Citizen USP Match[/url]
 [*] [url=https://steamcommunity.com/sharedfiles/filedetails/?id=2804426219]Apex Legends Pistol[/url]
 [*] [url=https://steamcommunity.com/sharedfiles/filedetails/?id=2281728283)]COD 50 GS[/url]
 [*] [url=https://steamcommunity.com/sharedfiles/filedetails/?id=2971436118]Desert Eagle[/url]
@@ -20,7 +20,6 @@ Full list of specially handled weapons:
 [*] [url=https://steamcommunity.com/sharedfiles/filedetails/?id=2386620896]Fallout 4 Pistol[/url]
 [*] [url=https://steamcommunity.com/sharedfiles/filedetails/?id=2126368719]Halo M6C[/url]
 [*] [url=https://steamcommunity.com/sharedfiles/filedetails/?id=2298636157]HL1 Glock[/url]
-[*] [url=https://steamcommunity.com/sharedfiles/filedetails/?id=2122819116]Luger P08[/url]
 [*] [url=https://steamcommunity.com/sharedfiles/filedetails/?id=2353427612]Modern Warfare Renetti[/url]
 [*] [url=https://steamcommunity.com/sharedfiles/filedetails/?id=2257869330]Soggy's USP Match[/url]
 [*] [url=https://steamcommunity.com/sharedfiles/filedetails/?id=2503412081)]OTS-14 Groza[/url]
