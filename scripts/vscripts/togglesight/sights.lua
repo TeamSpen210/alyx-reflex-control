@@ -13,6 +13,8 @@ local CLS_SMG = "hlvr_weapon_rapidfire"
 
 -- For testing both sights:
 -- hlvr_setall 31 48 258 100 10 30 1 0 10 30 2 0
+-- Just pistol
+-- hlvr_setall 25 48 2 100 10 30 1 0 10 30 2 0
 
 
 -- We have 4 sounds - on/off, via button and auto.
@@ -238,7 +240,7 @@ for addon in Convars:GetStr("default_enabled_addons_list"):gmatch("[^,]+") do
 			group=1,
 			on_state=1,
 			off_state=0,
-			auto_range=1.0,
+			auto_range=1.5,
 			snd_pos=Vector(3.55, 0.0, 3.6),
 			sounds=SND_ATTACH,
 			replace="cod_renetti",
@@ -696,11 +698,7 @@ local function Init()
 			FindAndUpdateSight(gun, info, StateUnchanged)
 		end
 	end
-
-	Player:GetPublicScriptScope()["ToggleSight"] = function()
-		FireGameEvent("player_pistol_toggle_lasersight", {userid=Player:entindex()});
-	end
-	print("TS Toggle Reflex Sights active.")
+	print("TS Reflex Control mod initalised.")
 end
 ListenToPlayerEvent("vr_player_ready", Init);
 
