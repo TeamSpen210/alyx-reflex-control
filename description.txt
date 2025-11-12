@@ -28,3 +28,4 @@ Full list of specially handled weapons:
 [/list]
 
 Many others also work, since they do not change the attachments at all. If you have a mod which malfunctions, please let me know. You can also disable either gun in the Alyxlib menu.
+The source files are [url=https://github.com/TeamSpen210/alyx-reflex-control]available on GitHub[/url].
