@@ -653,8 +653,6 @@ local function ModeChanged(mode)
 	-- Avoid double-registering.
 	Input:StopListeningByContext(EVT_BUTTON_CTX);
 
-	Msg(("ModeChange: type=%s, value=%s"):format(type(mode), tostring(mode)))
-
 	if mode == 0 then -- Auto mode.
 		Player:SetContextThink("TSpen_ToggleSight_AutoThink", AutoThink, 0.0);
 	elseif mode == 1 then -- Button mode.
@@ -682,11 +680,16 @@ EasyConvars:RegisterConvar(
 		ModeChanged(tonumber(value) or 0)
 	end
 );
-EasyConvars:SetPersistent(CVAR_MODE, true);
 EasyConvars:RegisterConvar(CVAR_AUTO_RANGE[CLS_PISTOL], weapons[CLS_PISTOL].auto_range, "Determines how close you need to be to trigger the pistol's sight.")
 EasyConvars:RegisterConvar(CVAR_AUTO_RANGE[CLS_SMG], weapons[CLS_SMG].auto_range, "Determines how close you need to be to trigger the SMG's sight.")
 EasyConvars:RegisterToggle(CVAR_DISABLE[CLS_PISTOL], false, "Disable modifying the pistol.", nil, function() UpdateDisabled(CLS_PISTOL) end)
 EasyConvars:RegisterToggle(CVAR_DISABLE[CLS_SMG], false, "Disable modifying the SMG.", nil, function() UpdateDisabled(CLS_SMG) end)
+
+EasyConvars:SetPersistent(CVAR_MODE, true);
+EasyConvars:SetPersistent(CVAR_AUTO_RANGE[CLS_PISTOL], true);
+EasyConvars:SetPersistent(CVAR_AUTO_RANGE[CLS_SMG], true);
+EasyConvars:SetPersistent(CVAR_DISABLE[CLS_PISTOL], true);
+EasyConvars:SetPersistent(CVAR_DISABLE[CLS_SMG], true);
 
 local function Init()
 	ModeChanged(EasyConvars:GetInt(CVAR_MODE) or 0);
@@ -717,20 +720,40 @@ local function makeMenu()
 	DebugMenu:AddCategory(MENU_ID, "Reflex Control")
 
 	-- TODO: Enable/disable menu options?
-	DebugMenu:AddCycle(MENU_ID, CVAR_MODE, {
-		{value=0, text="Toggle Automatically"},
-		{value=1, text="Use Toggle Laser Sights button"},
-		{value=2, text="Enable from Offhand"},
-	}, CVAR_MODE)
-	DebugMenu:AddToggle(MENU_ID, "tspen_reflex_control_debug", "Visualise Range", function(value) DEBUG = value end, false)
+	if DebugMenu.version == "v1.0.0" then
+		print("Reflex Control: v1 debug menu detected")
+		---@diagnostic disable
+		DebugMenu:AddCycle(MENU_ID, CVAR_MODE, {
+			{value=0, text="Toggle Automatically"},
+			{value=1, text="Use Toggle Laser Sights button"},
+			{value=2, text="Enable from Offhand"},
+		}, CVAR_MODE)
+		DebugMenu:AddToggle(MENU_ID, "tspen_reflex_control_debug", "Visualise Range", function(value) DEBUG = value end, false)
 
-	DebugMenu:AddSeparator(MENU_ID, "tspen_reflex_control_pistol", "Pistol (" .. weapons[CLS_PISTOL].name .. ")")
-	DebugMenu:AddToggle(MENU_ID, "tspen_reflex_control_pistol_disable", "Disable Changes", CVAR_DISABLE[CLS_PISTOL])
-	DebugMenu:AddSlider(MENU_ID, CTRL_PISTOL_AUTO_RANGE, "Auto Range", 0.1, 10, false, CVAR_AUTO_RANGE[CLS_PISTOL], 1, 0.1, nil)
+		DebugMenu:AddSeparator(MENU_ID, "tspen_reflex_control_pistol", "Pistol (" .. weapons[CLS_PISTOL].name .. ")")
+		DebugMenu:AddToggle(MENU_ID, "tspen_reflex_control_pistol_disable", "Disable Changes", CVAR_DISABLE[CLS_PISTOL])
+		DebugMenu:AddSlider(MENU_ID, CTRL_PISTOL_AUTO_RANGE, "Auto Range", 0.1, 10, false, CVAR_AUTO_RANGE[CLS_PISTOL], 1, 0.1, nil)
 
-	DebugMenu:AddSeparator(MENU_ID, "tspen_reflex_control_smg", "SMG (RapidFire)")
-	DebugMenu:AddToggle(MENU_ID, "tspen_reflex_control_smg_disable", "Disable Changes", CVAR_DISABLE[CLS_SMG])
-	DebugMenu:AddSlider(MENU_ID, CTRL_SMG_AUTO_RANGE, "Auto Range", 0.1, 10, false, CVAR_AUTO_RANGE[CLS_SMG], 1, 0.1, nil)
+		DebugMenu:AddSeparator(MENU_ID, "tspen_reflex_control_smg", "SMG (RapidFire)")
+		DebugMenu:AddToggle(MENU_ID, "tspen_reflex_control_smg_disable", "Disable Changes", CVAR_DISABLE[CLS_SMG])
+		DebugMenu:AddSlider(MENU_ID, CTRL_SMG_AUTO_RANGE, "Auto Range", 0.1, 10, false, CVAR_AUTO_RANGE[CLS_SMG], 1, 0.1, nil)
+		---@diagnostic enable
+	else
+		DebugMenu:AddCycle(MENU_ID, CVAR_MODE, "Mode", CVAR_MODE, {
+			{value=0, text="Toggle Automatically"},
+			{value=1, text="Use Toggle Laser Sights button"},
+			{value=2, text="Enable from Offhand"},
+		})
+		DebugMenu:AddToggle(MENU_ID, "tspen_reflex_control_debug", "Visualise Range", nil, function(value) DEBUG = value end, false)
+
+		DebugMenu:AddSeparator(MENU_ID, "tspen_reflex_control_pistol", "Pistol (" .. weapons[CLS_PISTOL].name .. ")")
+		DebugMenu:AddToggle(MENU_ID, "tspen_reflex_control_pistol_disable", "Disable Changes", CVAR_DISABLE[CLS_PISTOL])
+		DebugMenu:AddSlider(MENU_ID, CTRL_PISTOL_AUTO_RANGE, "Auto Range", CVAR_AUTO_RANGE[CLS_PISTOL], 0.1, 10, false, 1, 0.1, nil)
+
+		DebugMenu:AddSeparator(MENU_ID, "tspen_reflex_control_smg", "SMG (RapidFire)")
+		DebugMenu:AddToggle(MENU_ID, "tspen_reflex_control_smg_disable", "Disable Changes", CVAR_DISABLE[CLS_SMG])
+		DebugMenu:AddSlider(MENU_ID, CTRL_SMG_AUTO_RANGE, "Auto Range", CVAR_AUTO_RANGE[CLS_SMG], 0.1, 10, false, 1, 0.1, nil)
+	end
 
 end
 
