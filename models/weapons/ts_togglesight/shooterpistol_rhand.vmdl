@@ -43,6 +43,25 @@
 						]
 						hidden_in_tools = false
 					},
+					{
+						_class = "BodyGroup"
+						name = "block_irons"
+						children = 
+						[
+							{
+								_class = "BodyGroupChoice"
+								meshes = 
+								[
+									"irons",
+								]
+							},
+							{
+								_class = "BodyGroupChoice"
+								meshes = [  ]
+							},
+						]
+						hidden_in_tools = false
+					},
 				]
 			},
 			{
@@ -135,6 +154,17 @@
 						_class = "RenderMeshFile"
 						name = "holo"
 						filename = "models/shooterpistol_rhand_sights.dmx"
+						import_scale = 1.0
+						import_filter = 
+						{
+							exclude_by_default = false
+							exception_list = [  ]
+						}
+					},
+					{
+						_class = "RenderMeshFile"
+						name = "irons"
+						filename = "models/shooterpistol_rhand_ironblock.dmx"
 						import_scale = 1.0
 						import_filter = 
 						{
