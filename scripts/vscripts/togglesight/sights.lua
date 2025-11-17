@@ -734,6 +734,7 @@ EasyConvars:RegisterToggle(CVAR_DISABLE[CLS_PISTOL], false, "Disable modifying t
 EasyConvars:RegisterToggle(CVAR_DISABLE[CLS_SMG], false, "Disable modifying the SMG.", nil, function() UpdateDisabled(CLS_SMG) end)
 
 EasyConvars:SetPersistent(CVAR_MODE, true);
+EasyConvars:SetPersistent(CVAR_PRESERVE_IRONS, true);
 EasyConvars:SetPersistent(CVAR_AUTO_RANGE[CLS_PISTOL], true);
 EasyConvars:SetPersistent(CVAR_AUTO_RANGE[CLS_SMG], true);
 EasyConvars:SetPersistent(CVAR_DISABLE[CLS_PISTOL], true);
