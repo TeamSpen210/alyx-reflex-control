@@ -61,10 +61,13 @@ local ATTACH_REFLEX = "reticule_attach"
 local CTX_ENABLED = "tspen_reflex_control_enabled" -- Think function context
 -- Context on guns, whether offhand is holding the gun.
 local CTX_IS_HELD = "tspen_reflex_control_held"
+-- Think function contexts.
+local THINK_AUTO = "TSpen_ToggleSight_AutoThink"
 local EVT_BUTTON_CTX = "tspen_reflex_control" -- Context for Alyxlib buttons
 --- Folder replacement models are found in.
 local REPLACE_PREFIX = "models/weapons/ts_togglesight/"
 local CVAR_MODE = "tspen_reflex_control_mode"
+local CVAR_PRESERVE_IRONS = "tspen_reflex_control_preserve_irons"
 local CVAR_AUTO_RANGE = {
 	[CLS_PISTOL]="tspen_reflex_control_pistol_auto_range",
 	[CLS_SMG]="tspen_reflex_control_smg_auto_range",
@@ -73,14 +76,20 @@ local CVAR_DISABLE = {
 	[CLS_PISTOL]="tspen_reflex_control_disable_pistol",
 	[CLS_SMG]="tspen_reflex_control_disable_smg",
 }
-local CTRL_PISTOL_AUTO_RANGE = "ts_togglesight_pistol_auto_range";
-local CTRL_SMG_AUTO_RANGE = "ts_togglesight_smg_auto_range";
+local CTRL_VIS_RANGE = "tspen_reflex_control_visualise_range"
+local CTRL_PISTOL_AUTO_RANGE = "tspen_reflex_control_pistol_auto_range";
+local CTRL_SMG_AUTO_RANGE = "tspen_reflex_control_smg_auto_range";
 local DEBUG = false;
 -- So we know what to swap back to 
 local ORIG_MODELS = {
 	[CLS_PISTOL]="models/weapons/vr_alyxgun/vr_alyxgun_attach_shroud",
 	[CLS_SMG]="models/weapons/vr_ipistol/ipistol_holosight",
 }
+
+--- The three toggling modes.
+local MODE_AUTO = 0
+local MODE_BUTTON = 1
+local MODE_OFFHAND = 2
 
 -- Definitions for each weapon. 
 ---@class WeaponInfo
@@ -92,9 +101,13 @@ local ORIG_MODELS = {
 ---@field replace_lhand? string If set, full model path to replace for this hand.
 ---@field replace_rhand? string If set, full model path to replace for this hand.
 ---@field group? integer The bodygroup index to change, if set.
+---@field irons_group? integer If set, a bodygroup to disable (1) if blocks-irons is on.
 ---@field on_state? integer States to use when turned on/off.
 ---@field off_state? integer
 ---@field disable_draw? boolean If set, hide when disabled.
+---@field hide_irons? boolean If set, the gun has iron sights, and the inactive
+---       state blocks iron sights. If the option is enabled, completely disable
+---       the model for these so this is usable.
 ---@field sight_pos_lhand? Vector The offset to the reflex sights, for auto mode. 
 ---       If unset, use the `reticule_attach` attachment point to locate.
 ---@field sight_pos_rhand? Vector The offset to the reflex sights, for auto mode. 
@@ -118,6 +131,7 @@ local weapons = {
 		auto_range=2.5,
 		sounds=SND_HOLO,
 		snd_pos=Vector(0, -1.0, 4.0),
+		hide_irons=false, -- Doesn't have iron sights to block.
 	}
 };
 
@@ -192,8 +206,9 @@ local invis_sight = {
 local standard_pistol = {
 	name="Alyx Gun",
 	group=1,
-	on_state=1,
-	off_state=0,
+	irons_group=2,
+	on_state=0,
+	off_state=1,
 	auto_range=2,
 	snd_pos=Vector(0, 2.6875, 2.825),
 	sounds=SND_HOLO,
@@ -206,6 +221,7 @@ for addon in Convars:GetStr("default_enabled_addons_list"):gmatch("[^,]+") do
 		weapons[CLS_PISTOL] = {
 			name="Shooter Pistol",
 			group=1,
+			irons_group=2,
 			on_state=1,
 			off_state=0,
 			auto_range=2,
@@ -217,6 +233,7 @@ for addon in Convars:GetStr("default_enabled_addons_list"):gmatch("[^,]+") do
 	end
 
 	if addon == "2122819116" then
+		-- Not on the workshop anymore??
 		print("Reflex Control: Luger P08 mod detected, toggling sights.")
 		weapons[CLS_PISTOL] = {
 			name="Luger P08",
@@ -229,6 +246,7 @@ for addon in Convars:GetStr("default_enabled_addons_list"):gmatch("[^,]+") do
 			-- Both are identical.
 			replace_lhand=REPLACE_PREFIX .. "luger_ambi.vmdl",
 			replace_rhand=REPLACE_PREFIX .. "luger_ambi.vmdl",
+			-- TODO: If it returns, consider iron sights
 		};
 		return;
 	end
@@ -242,8 +260,11 @@ for addon in Convars:GetStr("default_enabled_addons_list"):gmatch("[^,]+") do
 			off_state=0,
 			auto_range=1.5,
 			snd_pos=Vector(3.55, 0.0, 3.6),
+			pos_lhand=Vector(3.55, 0, 3.6),
+			pos_rhand=Vector(3.55, 0, 3.6),
 			sounds=SND_ATTACH,
 			replace="cod_renetti",
+			hide_irons=true,  -- Adds a rail adapter.
 		};
 		return;
 	end
@@ -260,6 +281,7 @@ for addon in Convars:GetStr("default_enabled_addons_list"):gmatch("[^,]+") do
 			snd_pos=Vector(4.8, 0, 4.0),
 			sounds=SND_FLIP,
 			replace="mcmessenger",
+			hide_irons=true, -- Sorta usable, but does block.
 		};
 		return;
 	end
@@ -273,7 +295,8 @@ for addon in Convars:GetStr("default_enabled_addons_list"):gmatch("[^,]+") do
 			auto_range=2,
 			snd_pos=Vector(4.8, 0, 4.0),
 			sounds=SND_FLIP,
-			replace="mcmessenger"
+			replace="mcmessenger",
+			hide_irons=true,
 		};
 		return;
 	end
@@ -288,7 +311,8 @@ for addon in Convars:GetStr("default_enabled_addons_list"):gmatch("[^,]+") do
 			auto_range=1.5,
 			snd_pos=Vector(4.8, 0, 4.0),
 			sounds=SND_ATTACH,
-			replace="soggy_usp"
+			replace="soggy_usp",
+			hide_irons=false, -- Canted
 		};
 		return;
 	end
@@ -304,6 +328,7 @@ for addon in Convars:GetStr("default_enabled_addons_list"):gmatch("[^,]+") do
 			snd_pos=Vector(3, 0, 3),
 			sounds=SND_HOLO,
 			replace="anticitizen_usp",
+			hide_irons=true, -- Quite tall
 		};
 		return;
 	end
@@ -328,6 +353,7 @@ for addon in Convars:GetStr("default_enabled_addons_list"):gmatch("[^,]+") do
 			sight_pos_lhand=sight.pos_lhand,
 			sight_pos_rhand=sight.pos_rhand,
 			snd_pos=Vector(0, 0, 0),
+			hide_irons=false, -- Doesn't matter, we're removing it entirely.
 		};
 		return;
 	end
@@ -343,6 +369,7 @@ for addon in Convars:GetStr("default_enabled_addons_list"):gmatch("[^,]+") do
 			sight_pos_lhand=sight.pos_lhand,
 			sight_pos_rhand=sight.pos_rhand,
 			snd_pos=Vector(0, 0, 0),
+			hide_irons=false, -- Will turn off and be invisible.
 		};
 		return;
 	end
@@ -383,8 +410,9 @@ end
 RegisterAlyxLibDiagnostic(ADDON_ID, function ()
 	local diag = {"Running"};
 	local modes = {
-		[0] = "Auto",
-		[1] = "Manual",
+		[MODE_AUTO] = "Auto",
+		[MODE_BUTTON] = "Manual",
+		[MODE_OFFHAND] = "Offhand",
 	}
 	local mode_int = EasyConvars:GetInt(CVAR_MODE);
 	table.insert(diag, "Mode: " .. (modes[mode_int] or ("Invalid = %i"):format(mode_int)));
@@ -421,7 +449,7 @@ end)
 ---@param sight CBaseAnimating
 ---@param info WeaponInfo
 local function StateUnchanged(prev, gun, sight, info) 
-	if EasyConvars:GetInt(CVAR_MODE) == 2 then
+	if EasyConvars:GetInt(CVAR_MODE) == MODE_OFFHAND then
 		return Storage.LoadBoolean(gun, CTX_IS_HELD, prev)
 	else
 		return prev;
@@ -440,7 +468,7 @@ local function StateToggle(x) return not x end
 local function UpdateSight(gun, sight, info, state_func)
 	if EasyConvars:GetBool(CVAR_DISABLE[info.cls]) then
 		-- Disabled, revert changes.
-		if info.disable_draw then
+		if info.disable_draw or info.hide_irons then
 			sight:SetRenderingEnabled(true);
 		end
 		if info.group ~= nil then
@@ -457,15 +485,24 @@ local function UpdateSight(gun, sight, info, state_func)
 		-- Toggle the sight if ncessary.
 		local prev_enabled = Storage.LoadBoolean(gun, CTX_ENABLED, true)
 		local enabled = state_func(prev_enabled, gun, sight, info)
+		local preserve_irons = EasyConvars:GetBool(CVAR_PRESERVE_IRONS)
 		if enabled ~= prev_enabled then
 			Storage.SaveBoolean(gun, CTX_ENABLED, enabled)
 			-- local pos = RotatePosition(sight:GetAbsOrigin(), sight:GetAngles(), info.snd_pos);
 			-- print("Snd pos: " .. tostring(pos - gun:GetOrigin()))
+			local sounds = info.sounds
+			if info.hide_irons and preserve_irons then
+				-- We're removing entirely.
+				sounds = SND_ATTACH
+			elseif info.irons_group ~= nil and preserve_irons and sounds == SND_HOLO then
+				-- We're removing and powering.
+				sounds = SND_FLIP
+			end
 			-- In auto mode, reduce volume since it's going to swap occasionally.
-			if EasyConvars:GetInt(CVAR_MODE) == 0 then
-				gun:EmitSound(vlua.select(enabled, info.sounds.auto_on, info.sounds.auto_off));
+			if EasyConvars:GetInt(CVAR_MODE) == MODE_AUTO then
+				gun:EmitSound(vlua.select(enabled, sounds.auto_on, sounds.auto_off));
 			else
-				gun:EmitSound(vlua.select(enabled, info.sounds.btn_on, info.sounds.btn_off));
+				gun:EmitSound(vlua.select(enabled, sounds.btn_on, sounds.btn_off));
 			end
 		end
 		local replace = vlua.select(Player.IsLeftHanded, info.replace_lhand, info.replace_rhand);
@@ -484,6 +521,9 @@ local function UpdateSight(gun, sight, info, state_func)
 		if info.disable_draw then
 			--print(string.format("Set sight for %s, alpha=%i", info.name, alpha))
 			sight:SetRenderingEnabled(enabled);
+		elseif info.hide_irons then
+			-- If this cvar is set, we want to hide sights entirely when disabled.
+			sight:SetRenderingEnabled(enabled or not preserve_irons)
 		end
 		if info.group ~= nil then
 			local state = vlua.select(enabled, info.on_state, info.off_state);
@@ -491,6 +531,10 @@ local function UpdateSight(gun, sight, info, state_func)
 			if state ~= nil then
 				sight:SetBodygroup(info.group, state)
 			end
+		end
+		if info.irons_group then
+			local state = vlua.select(enabled or not preserve_irons, 0, 1)
+			sight:SetBodygroup(info.irons_group, state)
 		end
 	end
 end
@@ -514,7 +558,7 @@ end
 ---@param state_func StateFunc
 local function UpdateHeldSight(state_func)
 	local gun = Player:GetWeapon() --[[@as CBaseAnimating]]
-	if gun == nil then
+	if not IsValidEntity(gun) then
 		return
 	end
 	local info = weapons[gun:GetClassname()]
@@ -623,16 +667,19 @@ local function TwoHandGrab(cls, grabbed)
 	-- Msg(("Grab %s = %s"):format(cls, tostring(grabbed)))
 	if gun ~= nil and gun:GetClassname() == cls then
 		Storage.SaveBoolean(gun, CTX_IS_HELD, grabbed);
-		if EasyConvars:GetInt(CVAR_MODE) == 2 then
+		if EasyConvars:GetInt(CVAR_MODE) == MODE_OFFHAND then
 			UpdateHeldSight(StateUnchanged)
 		end
+		-- Otherwise, this doesn't change mode, but we do want to record the state.
 	else
 		-- Gun is not yet fully equipped. Weapon switch event will then apply
 		-- this change.
 		local info = weapons[cls];
 		if info ~= nil and info.entity ~= nil then
 			Storage.SaveBoolean(info.entity, CTX_IS_HELD, grabbed);
-			FindAndUpdateSight(info.entity, info, function() return grabbed end);
+			if EasyConvars:GetInt(CVAR_MODE) == MODE_OFFHAND then
+				FindAndUpdateSight(info.entity, info, function() return grabbed end);
+			end
 		end
 	end
 end
@@ -653,22 +700,22 @@ local function ModeChanged(mode)
 	-- Avoid double-registering.
 	Input:StopListeningByContext(EVT_BUTTON_CTX);
 
-	if mode == 0 then -- Auto mode.
-		Player:SetContextThink("TSpen_ToggleSight_AutoThink", AutoThink, 0.0);
-	elseif mode == 1 then -- Button mode.
-		Player:SetContextThink("TSpen_ToggleSight_AutoThink", nil, 0.0);
+	if mode == MODE_AUTO then
+		Player:SetContextThink(THINK_AUTO, AutoThink, 0.0);
+	elseif mode == MODE_BUTTON then
+		Player:SetContextThink(THINK_AUTO, nil, 0.0);
 		Input:ListenToButton(
 			"press", -1, DIGITAL_INPUT_TOGGLE_LASER_SIGHT, 1,
 			function() UpdateHeldSight(StateToggle) end,
 			EVT_BUTTON_CTX
 		);
-	elseif mode == 2 then -- Offhand mode
-		Player:SetContextThink("TSpen_ToggleSight_AutoThink", nil, 0.0);
+	elseif mode == MODE_OFFHAND then
+		Player:SetContextThink(THINK_AUTO, nil, 0.0);
 		-- Refresh, this checks the state.
 		UpdateHeldSight(StateUnchanged)
 	else
 		Warning("Invalid Reflex Control mode " .. mode .. "!");
-		EasyConvars:SetInt(CVAR_MODE, 0);
+		EasyConvars:SetInt(CVAR_MODE, MODE_AUTO);
 	end
 end
 
@@ -680,6 +727,7 @@ EasyConvars:RegisterConvar(
 		ModeChanged(tonumber(value) or 0)
 	end
 );
+EasyConvars:RegisterToggle(CVAR_PRESERVE_IRONS, false, "If set, hide more of the reflex sight when disabled to allow use of iron sights, if necessary.", nil, function() UpdateHeldSight(StateUnchanged) end)
 EasyConvars:RegisterConvar(CVAR_AUTO_RANGE[CLS_PISTOL], weapons[CLS_PISTOL].auto_range, "Determines how close you need to be to trigger the pistol's sight.")
 EasyConvars:RegisterConvar(CVAR_AUTO_RANGE[CLS_SMG], weapons[CLS_SMG].auto_range, "Determines how close you need to be to trigger the SMG's sight.")
 EasyConvars:RegisterToggle(CVAR_DISABLE[CLS_PISTOL], false, "Disable modifying the pistol.", nil, function() UpdateDisabled(CLS_PISTOL) end)
@@ -692,7 +740,7 @@ EasyConvars:SetPersistent(CVAR_DISABLE[CLS_PISTOL], true);
 EasyConvars:SetPersistent(CVAR_DISABLE[CLS_SMG], true);
 
 local function Init()
-	ModeChanged(EasyConvars:GetInt(CVAR_MODE) or 0);
+	ModeChanged(EasyConvars:GetInt(CVAR_MODE) or MODE_AUTO);
 	-- Look for already-equipped weapons, toggle them in case we loaded from save.
 	local hand_pos = Player.PrimaryHand:GetAbsOrigin();
 	for info_cls, info in pairs(weapons) do
@@ -724,11 +772,12 @@ local function makeMenu()
 		print("Reflex Control: v1 debug menu detected")
 		---@diagnostic disable
 		DebugMenu:AddCycle(MENU_ID, CVAR_MODE, {
-			{value=0, text="Toggle Automatically"},
-			{value=1, text="Use Toggle Laser Sights button"},
-			{value=2, text="Enable from Offhand"},
+			{value=MODE_AUTO, text="Toggle Automatically"},
+			{value=MODE_BUTTON, text="Use Toggle Laser Sights button"},
+			{value=MODE_OFFHAND, text="Enable from Offhand"},
 		}, CVAR_MODE)
-		DebugMenu:AddToggle(MENU_ID, "tspen_reflex_control_debug", "Visualise Range", function(value) DEBUG = value end, false)
+		DebugMenu:AddToggle(MENU_ID, CTRL_VIS_RANGE, "Visualise Range", function(value) DEBUG = value end, false)
+		DebugMenu:AddToggle(MENU_ID, CVAR_PRESERVE_IRONS, "Preserve Iron Sights", CVAR_PRESERVE_IRONS)
 
 		DebugMenu:AddSeparator(MENU_ID, "tspen_reflex_control_pistol", "Pistol (" .. weapons[CLS_PISTOL].name .. ")")
 		DebugMenu:AddToggle(MENU_ID, "tspen_reflex_control_pistol_disable", "Disable Changes", CVAR_DISABLE[CLS_PISTOL])
@@ -740,11 +789,12 @@ local function makeMenu()
 		---@diagnostic enable
 	else
 		DebugMenu:AddCycle(MENU_ID, CVAR_MODE, "Mode", CVAR_MODE, {
-			{value=0, text="Toggle Automatically"},
-			{value=1, text="Use Toggle Laser Sights button"},
-			{value=2, text="Enable from Offhand"},
+			{value=MODE_AUTO, text="Toggle Automatically"},
+			{value=MODE_BUTTON, text="Use Toggle Laser Sights button"},
+			{value=MODE_OFFHAND, text="Enable from Offhand"},
 		})
-		DebugMenu:AddToggle(MENU_ID, "tspen_reflex_control_debug", "Visualise Range", nil, function(value) DEBUG = value end, false)
+		DebugMenu:AddToggle(MENU_ID, CTRL_VIS_RANGE, "Visualise Range", nil, function(value) DEBUG = value end, false)
+		DebugMenu:AddToggle(MENU_ID, CVAR_PRESERVE_IRONS, "Preserve Iron Sights", CVAR_PRESERVE_IRONS)
 
 		DebugMenu:AddSeparator(MENU_ID, "tspen_reflex_control_pistol", "Pistol (" .. weapons[CLS_PISTOL].name .. ")")
 		DebugMenu:AddToggle(MENU_ID, "tspen_reflex_control_pistol_disable", "Disable Changes", CVAR_DISABLE[CLS_PISTOL])
